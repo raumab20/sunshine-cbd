@@ -1,80 +1,67 @@
 import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { signInSchema } from "./lib/zod";
 import Github from "next-auth/providers/github";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import Credentials from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import { db } from "./db";
+import { saltAndHashPassword } from "./utils/helper";
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
-    providers: [
-        Github,
-        Credentials({
-            credentials: {
-                email: {
-                    label: "Email",
-                    type: "email",
-                    placeholder: "Email"},
-                password: {
-                    label: "Password",
-                    type: "password",
-                    placeholder: "Password"
-                }    
+export const {
+  handlers: { GET, POST },
+  signIn,
+  signOut,
+  auth,
+} = NextAuth({
+  adapter: PrismaAdapter(db),
+  session: { strategy: "jwt" },
+  providers: [
+    Github({
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+    }),
+    Credentials({
+      name: "Credentials",
+      credentials: {
+        email: {
+          label: "Email",
+          type: "email",
+          placeholder: "email@example.com",
+        },
+        password: { label: "Password", type: "password" },
+      },
+      authorize: async (credentials) => {
+        if (!credentials || !credentials.email || !credentials.password) {
+          return null;
+        }
+
+        const email = credentials.email as string;
+        const hash = saltAndHashPassword(credentials.password);
+
+        let user: any = await db.user.findUnique({
+          where: {
+            email,
+          },
+        });
+
+        if (!user) {
+          user = await db.user.create({
+            data: {
+              email,
+              hashedPassword: hash,
             },
-            async authorize(credentials) {
-                let user = null;
+          });
+        } else {
+          const isMatch = bcrypt.compareSync(
+            credentials.password as string,
+            user.hashedPassword
+          );
+          if (!isMatch) {
+            throw new Error("Incorrect password.");
+          }
+        }
 
-                const parsedCredentials = signInSchema.safeParse(credentials);
-                if(!parsedCredentials.success) {
-                    console.log("Invalid credentials", parsedCredentials.error.errors);
-
-                    return null;
-                }
-
-                user = {
-                    id: "1",
-                    name: "John Doe",
-                    email: "paulus@email.com",
-                    role: "admin"
-                }
-
-                if (!user) {
-                    console.log("Invalid credentials");
-
-                    return null;
-                }
-
-                return user;
-            }
-        })
-    ],
-    callbacks: {
-        authorized({request: {nextUrl}, auth}) {
-            const isLoggedIn = !!auth?.user;
-            const { pathname } = nextUrl;
-
-            if(pathname.startsWith("/auth/signin") && isLoggedIn) {
-                return Response.redirect(new URL("/", nextUrl));
-            }
-
-            return !!auth;
-        },
-        jwt({ token, user, trigger, session }) {
-            if (user) {
-                token.id = user.id as string;
-                token.role = user.role as string;
-            }
-
-            if(trigger === "update" && session) {
-                token = {...token, ...session}
-            }
-    
-            return token;
-        },
-        session({ session, token }) {
-            session.user.id = token.id;
-            session.user.role = token.role;
-            return session;
-        },
-    },
-    pages: {
-        signIn: "/auth/signin",
-    },
-})
+        return user;
+      },
+    }),
+  ],
+});

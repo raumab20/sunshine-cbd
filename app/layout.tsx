@@ -1,40 +1,33 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/navbar";
 import { SessionProvider } from "next-auth/react";
+import { auth } from "@/auth";
+import Navbar from "@/components/navbar";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SunshineCBD",
-  description: "The next generation CBD shop where the sun always shines.",
+  description: "The next level CBD shop where the sun always shines",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <SessionProvider>
-          <Navbar />
-        </SessionProvider>
-        {children}
-      </body>
-    </html>
+    <SessionProvider session={session}>
+      <html lang="en">
+        <body className={inter.className}>
+          <div className="mx-auto max-w-screen-lg h-screen flex flex-col">
+            <Navbar />
+            <div className="flex-grow">{children}</div>
+          </div>
+        </body>
+      </html>
+    </SessionProvider>
   );
 }
