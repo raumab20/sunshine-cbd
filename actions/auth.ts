@@ -31,31 +31,29 @@ export const logout = async () => {
 };
 
 export const loginWithCreds = async (formData: FormData) => {
-  const rawFormData = {
-    email: formData.get("email"),
-    password: formData.get("password"),
-    role: "ADMIN",
-    redirectTo: "/",
-  };
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
 
-  const existingUser = await getUserByEmail(formData.get("email") as string);
-  console.log(existingUser);
+  if (!email || !password) {
+    return { error: "Bitte E-Mail und Passwort eingeben." };
+  }
 
   try {
-    await signIn("credentials", rawFormData);
-  } catch (error: any) {
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case "CredentialsSignin":
-          return { error: "Invalid credentials!" };
-        default:
-          return { error: "Something went wrong!" };
-      }
+    const result = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
+
+    if (!result || result.error) {
+      return { error: "Ungültige Anmeldedaten." };
     }
 
-    throw error;
+    return { success: true };
+  } catch (error) {
+    console.error(error);
+    return { error: "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut." };
   }
-  revalidatePath("/");
 };
 
 export const registerWithCreds = async (formData: FormData) => {
@@ -65,34 +63,52 @@ export const registerWithCreds = async (formData: FormData) => {
   const username = formData.get("username") as string;
 
   if (!email || !password || !confirmPassword) {
-    return { error: "All fields are required." };
+    return { error: "Bitte alle Felder ausfüllen." };
   }
 
   if (password !== confirmPassword) {
-    return { error: "Passwords do not match." };
+    return { error: "Passwords do not match" };
   }
 
-  const existingUser = await getUserByEmail(email);
-  if (existingUser) {
-    return { error: "User already exists with this email." };
+  // **E-Mail-Format validieren**
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { error: "Bitte eine gültige E-Mail-Adresse eingeben." };
+  }
+
+  // **Passwortstärke überprüfen**
+  const passwordRegex =
+    /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':"\\|,.<>/?]).{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return {
+      error:
+        "Das Passwort muss mindestens 8 Zeichen lang sein und Buchstaben, Zahlen und Sonderzeichen enthalten.",
+    };
   }
 
   try {
-    const hashedPassword = saltAndHashPassword(password);
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
+      return { error: "Ein Benutzer mit dieser E-Mail existiert bereits." };
+    }
+
+    const hashedPassword = await saltAndHashPassword(password);
 
     const newUser = await db.user.create({
       data: {
         email,
-        name: username,
+        name: username || null,
         hashedPassword,
       },
     });
 
-    console.log("New user created:", newUser);
+    console.log("Neuer Benutzer erstellt:", newUser);
 
-    return { success: true, email, password };
+    return { success: true };
   } catch (error) {
-    console.error("Error during registration:", error);
-    return { error: "Registration failed. Please try again." };
+    console.error("Fehler bei der Registrierung:", error);
+    return {
+      error: "Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    };
   }
 };

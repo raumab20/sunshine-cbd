@@ -4,7 +4,6 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { saltAndHashPassword } from "./utils/helper";
 
 export const {
   handlers: { GET, POST },
@@ -29,39 +28,46 @@ export const {
         },
         password: { label: "Password", type: "password" },
       },
-      authorize: async (credentials) => {
-        if (!credentials || !credentials.email || !credentials.password) {
-          return null;
-        }
+      authorize: async (credentials: Partial<Record<"email" | "password", unknown>>) => {
+        try {
+          if (!credentials?.email || !credentials.password) {
+            throw new Error("Bitte E-Mail und Passwort eingeben.");
+          }
 
-        const email = credentials.email as string;
-        const hash = saltAndHashPassword(credentials.password);
-
-        let user: any = await db.user.findUnique({
-          where: {
-            email,
-          },
-        });
-
-        if (!user) {
-          user = await db.user.create({
-            data: {
-              email,
-              hashedPassword: hash,
-            },
+          const user = await db.user.findUnique({
+            where: { email: credentials.email as string },
           });
-        } else {
-          const isMatch = bcrypt.compareSync(
+
+          if (!user || !user.hashedPassword) {
+            throw new Error("Ungültige Anmeldedaten.");
+          }
+
+          const isMatch = await bcrypt.compare(
             credentials.password as string,
             user.hashedPassword
           );
+
           if (!isMatch) {
-            throw new Error("Incorrect password.");
+            throw new Error("Ungültige Anmeldedaten.");
+          }
+
+          return {
+            ...user,
+            role: user.role || "USER",
+          };
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(error.message || "Interner Serverfehler.");
+          } else {
+            throw new Error("Interner Serverfehler.");
           }
         }
-
-        return user;
       },
     }),
   ],
+  pages: {
+    signIn: "/auth/signin",
+    error: "/auth/error",
+  },
+  debug: process.env.NODE_ENV === "development",
 });

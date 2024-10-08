@@ -1,33 +1,31 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { SessionProvider } from "next-auth/react";
-import { auth } from "@/auth";
-import Navbar from "@/components/navbar";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { Providers } from './Providers';
+import Navbar from '@/components/navbar';
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "SunshineCBD",
-  description: "The next level CBD shop where the sun always shines",
+  title: 'SunshineCBD',
+  description: 'The next level CBD shop where the sun always shines',
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
-  const session = await auth();
+}) {
   return (
-    <SessionProvider session={session}>
-      <html lang="en">
-        <body className={inter.className}>
+    <html lang="en">
+      <body className={inter.className}>
+        <Providers>
           <div className="mx-auto max-w-screen h-screen flex flex-col">
             <Navbar />
             <div className="flex-grow">{children}</div>
           </div>
-        </body>
-      </html>
-    </SessionProvider>
+        </Providers>
+      </body>
+    </html>
   );
 }

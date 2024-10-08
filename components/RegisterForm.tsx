@@ -9,18 +9,37 @@ const RegisterForm = () => {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
-    const formData = new FormData(e.target);
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
-    if (password !== confirmPassword) {
+    // **Clientseitige Validierung**
+    if (!email || !password || !confirmPassword) {
+      setError("Bitte alle Felder ausfüllen.");
       setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
       setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    // **Passwortstärke überprüfen**
+    const passwordRegex =
+      /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*()_+[\]{};':"\\|,.<>/?]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      setError(
+        "Das Passwort muss mindestens 8 Zeichen lang sein und Buchstaben, Zahlen und Sonderzeichen enthalten."
+      );
+      setLoading(false);
       return;
     }
 
@@ -28,15 +47,16 @@ const RegisterForm = () => {
       const result = await registerWithCreds(formData);
 
       if (result?.error) {
-        setLoading(false);
         setError(result.error);
       } else {
+        // **Erfolgreiche Registrierung, Weiterleitung**
         router.push("/sign-in");
       }
     } catch (error) {
       console.error(error);
+      setError("Ein unerwarteter Fehler ist aufgetreten.");
+    } finally {
       setLoading(false);
-      setError("An unexpected error occurred.");
     }
   };
 
@@ -57,11 +77,11 @@ const RegisterForm = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-200">
-            Password
+            Passwort
           </label>
           <input
             type="password"
-            placeholder="Password"
+            placeholder="Passwort"
             name="password"
             className="mt-1 w-full px-4 p-2 h-10 rounded-md border border-gray-200 bg-white text-sm text-gray-700"
             required
@@ -69,11 +89,11 @@ const RegisterForm = () => {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-200">
-            Confirm Password
+            Passwort bestätigen
           </label>
           <input
             type="password"
-            placeholder="Confirm Password"
+            placeholder="Passwort bestätigen"
             name="confirmPassword"
             className="mt-1 w-full px-4 p-2 h-10 rounded-md border border-gray-200 bg-white text-sm text-gray-700"
             required
@@ -85,7 +105,7 @@ const RegisterForm = () => {
         )}
 
         <div className="mt-4">
-          <RegisterButton />
+          <RegisterButton loading={loading} />
         </div>
       </form>
     </div>

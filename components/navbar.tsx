@@ -1,16 +1,19 @@
-import { auth } from "@/auth"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+'use client';
+
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import LogoutButton from './LogoutButton';
 
-export default async function Navbar() {
-  const session = await auth()
+export default function Navbar() {
+  const { data: session } = useSession();
 
   return (
     <nav className="border-b bg-background">
@@ -24,7 +27,10 @@ export default async function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
+                    <AvatarImage
+                      src={session.user.image || ''}
+                      alt={session.user.name || ''}
+                    />
                     <AvatarFallback>{session.user.name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -35,9 +41,7 @@ export default async function Navbar() {
                   <div className="text-xs text-muted-foreground">{session.user.email}</div>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <form action="/api/auth/signout" method="POST" className="w-full">
-                    <Button variant="ghost" className="w-full justify-start">Abmelden</Button>
-                  </form>
+                  <LogoutButton />
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -51,5 +55,5 @@ export default async function Navbar() {
         </div>
       </div>
     </nav>
-  )
+  );
 }

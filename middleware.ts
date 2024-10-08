@@ -1,26 +1,40 @@
-// export { auth as middleware } from "@/auth";
-
+// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/auth";
+import { getToken } from "next-auth/jwt";
 
-const protectedRoutes = ["/middleware"];
+export async function middleware(request: NextRequest) {
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
-export default async function middleware(request: NextRequest) {
-  const session = await auth();
+  const { pathname } = request.nextUrl;
 
-  const isProtected = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
-  );
+  // Routen, die für angemeldete Benutzer nicht zugänglich sind
+  const protectedRoutesForAuthenticated = ["/sign-in", "/register"];
 
-  if (!session && isProtected) {
-    const absoluteURL = new URL("/", request.nextUrl.origin);
-    return NextResponse.redirect(absoluteURL.toString());
+  if (token && protectedRoutesForAuthenticated.includes(pathname)) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // Routen, die nur für angemeldete Benutzer zugänglich sind
+  const protectedRoutesForUnauthenticated = ["/dashboard", "/profile"];
+
+  if (
+    !token &&
+    protectedRoutesForUnauthenticated.some((route) =>
+      pathname.startsWith(route)
+    )
+  ) {
+    return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
 };
