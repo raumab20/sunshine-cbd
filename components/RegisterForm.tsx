@@ -6,7 +6,7 @@ import RegisterButton from "@/components/RegisterButton";
 
 const RegisterForm = () => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSubmit = async (e: any) => {
@@ -15,13 +15,28 @@ const RegisterForm = () => {
     setLoading(true);
 
     const formData = new FormData(e.target);
-    const result = await registerWithCreds(formData);
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
 
-    if (result?.error) {
-      console.log(result.error);
+    if (password !== confirmPassword) {
       setLoading(false);
-    } else {
-      router.push("/sign-in");
+      setError("Passwords do not match");
+      return;
+    }
+
+    try {
+      const result = await registerWithCreds(formData);
+
+      if (result?.error) {
+        setLoading(false);
+        setError(result.error);
+      } else {
+        router.push("/sign-in");
+      }
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+      setError("An unexpected error occurred.");
     }
   };
 
@@ -65,7 +80,9 @@ const RegisterForm = () => {
           />
         </div>
 
-        {error && <p className="text-red-500">{error}</p>}
+        {error && (
+          <p className="text-red-500 text-sm font-medium mt-2">{error}</p>
+        )}
 
         <div className="mt-4">
           <RegisterButton />
