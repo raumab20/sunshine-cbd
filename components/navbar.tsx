@@ -1,51 +1,55 @@
-import { auth } from "@/auth";
-import Link from "next/link";
-import Image from "next/image";
-import Logout from "./Logout";
+import { auth } from "@/auth"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-const Navbar = async () => {
-    const session = await auth();
-    return (
-      <nav className="border-b bg-background w-full flex items-center">
-        <div className="flex w-full items-center justify-between my-4">
-          <Link className="font-bold" href="/">
-            Home
-          </Link>
-  
-          <div className="flex items-center gap-x-5">
-            <Link href="/middleware">Middleware</Link>
-            <Link href="/server">Server</Link>
-          </div>
-  
-          <div className="flex items-center gap-x-5">
-            {!session?.user ? (
-              <Link href="/sign-in">
-                <div className="bg-blue-600 text-white text-sm px-4 py-2 rounded-sm">
-                  Login
-                </div>
-              </Link>
-            ) : (
-              <>
-                <div className="flex items-center gap-x-2 text-sm">
-                  {session?.user?.name}
-                  {session?.user?.image && (
-                    <Image
-                      className="rounded-full"
-                      width={30}
-                      height={30}
-                      alt="User Avatar"
-                      src={session?.user?.image || ""}
-                    />
-                  )}
-                </div>
-                <Logout />
-              </>
-            )}
-          </div>
+export default async function Navbar() {
+  const session = await auth()
+
+  return (
+    <nav className="border-b bg-background">
+      <div className="flex h-16 items-center justify-between mx-4">
+        <Link href="/" className="flex items-center space-x-2">
+          <span className="text-xl font-bold">Startseite</span>
+        </Link>
+        <div className="flex items-center space-x-4">
+          {session?.user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
+                    <AvatarFallback>{session.user.name?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuItem className="flex-col items-start">
+                  <div className="text-sm font-medium">{session.user.name}</div>
+                  <div className="text-xs text-muted-foreground">{session.user.email}</div>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <form action="/api/auth/signout" method="POST" className="w-full">
+                    <Button variant="ghost" className="w-full justify-start">Abmelden</Button>
+                  </form>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/sign-in">
+              <Button variant="secondary" size="sm">
+                Anmelden
+              </Button>
+            </Link>
+          )}
         </div>
-      </nav>
-    );
-  };
-  
-  export default Navbar;
-  
+      </div>
+    </nav>
+  )
+}
