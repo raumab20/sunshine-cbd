@@ -92,3 +92,14 @@ model Authenticator {
  
   @@unique([userId, credentialID])
 }
+
+model Product {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  price     Float
+  image     String
+  category  String
+  description String?
+  stock     Int
+  createdAt DateTime @default(now())
+}

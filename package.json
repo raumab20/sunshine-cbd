@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev && npm run seed",
+    "postinstall": "prisma generate",
+    "seed": "ts-node --esm prisma/seed.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest"
   },
+  "type": "module",
   "dependencies": {
     "@auth/mongodb-adapter": "^3.3.0",
     "@auth/prisma-adapter": "^2.5.3",
@@ -16,6 +19,7 @@
     "@radix-ui/react-avatar": "^1.1.1",
     "@radix-ui/react-dropdown-menu": "^2.1.2",
     "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-select": "^2.1.2",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.0",
@@ -57,6 +61,6 @@
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5.6.3"
   }
 }
