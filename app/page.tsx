@@ -53,7 +53,7 @@ export default function Home() {
                 Discover our premium, sun-grown CBD products for a brighter, healthier you.
               </p>
               <Link
-                href="#products"
+                href="/products"
                 className="bg-yellow-700 hover:bg-yellow-800 text-white-900 font-bold py-3 px-8 rounded-full transition duration-300 inline-block"
               >
                 Shop Now

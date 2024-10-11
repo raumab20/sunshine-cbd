@@ -16,10 +16,10 @@ export default function Navbar() {
   const { data: session } = useSession();
 
   return (
-    <nav className="border-b bg-background">
+    <nav className="bg-background ">
       <div className="flex h-16 items-center justify-between mx-4">
         <Link href="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold">Startseite</span>
+          <span className="text-xl font-bold">SunshineCBD</span>
         </Link>
         <div className="flex items-center space-x-4">
           {session?.user ? (

@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
       const sortBy = searchParams.get('sortBy');
       const sortOrder = searchParams.get('sortOrder');
   
+      // Erstelle die Filter- und Sortierklauseln
       let whereClause: any = {};
       if (category) {
         whereClause.category = category;
@@ -21,20 +22,25 @@ export async function GET(request: NextRequest) {
         if (minPrice) whereClause.price.gte = parseFloat(minPrice);
         if (maxPrice) whereClause.price.lte = parseFloat(maxPrice);
       }
-  
+
       let orderBy: any = {};
       if (sortBy) {
         orderBy[sortBy] = sortOrder === 'desc' ? 'desc' : 'asc';
       }
+
+      //console.log('whereClause:', whereClause); // Debugging: Ausgabe der Filterklausel
+      //console.log('orderBy:', orderBy); // Debugging: Ausgabe der Sortierklausel
   
+      // Führe die Prisma-Abfrage aus
       const products = await prisma.product.findMany({
-        where: whereClause,
-        orderBy: orderBy,
+        where: Object.keys(whereClause).length ? whereClause : undefined,
+        orderBy: Object.keys(orderBy).length ? orderBy : undefined,
       });
+  
+      //console.log('Returned products:', products); // Debugging: Ausgabe der zurückgegebenen Produkte
   
       return NextResponse.json(products);
     } catch (error) {
-      console.error('Error fetching products:', error);
       return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
     }
 }

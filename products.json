@@ -1,11 +1,11 @@
 [
-    { "id": 1, "name": "CBD Oil Tincture", "price": 49.99, "image": "/cbd-oil.webp", "category": "Oils", "description": "High-quality CBD oil", "stock": 100 },
-    { "id": 2, "name": "CBD Gummies", "price": 29.99, "image": "/cbd-gummies.webp", "category": "Edibles", "description": "Delicious CBD gummies", "stock": 50 },
-    { "id": 3, "name": "CBD Topical Cream", "price": 39.99, "image": "/cbd-cream.webp", "category": "Topicals", "description": "Relieves muscle pain", "stock": 75 },
-    { "id": 4, "name": "CBD Pet Treats", "price": 24.99, "image": "/cbd-pet-treats.webp", "category": "Pet Products", "description": "Safe for pets", "stock": 200 },
-    { "id": 5, "name": "CBD Sleep Capsules", "price": 34.99, "image": "/cbd-capsules.webp", "category": "Capsules", "description": "Helps with sleep", "stock": 150 },
-    { "id": 6, "name": "CBD Bath Bombs", "price": 19.99, "image": "/cbd-bath-bombs.webp", "category": "Bath Products", "description": "Relaxing bath bombs", "stock": 80 },
-    { "id": 7, "name": "CBD Vape Cartridge", "price": 59.99, "image": "/cbd-vape.webp", "category": "Vapes", "description": "High-quality vape oil", "stock": 120 },
-    { "id": 8, "name": "CBD Flowers", "price": 14.99, "image": "/cbd-flowers.webp", "category": "Flowers", "description": "Pure CBD flowers", "stock": 200 }
+    { "id": 1, "name": "CBD Oil Tincture", "price": 49.99, "image": "/cbd.webp", "category": "Oils", "description": "High-quality CBD oil", "stock": 100 },
+    { "id": 2, "name": "CBD Gummies", "price": 29.99, "image": "/cbd.webp", "category": "Edibles", "description": "Delicious CBD gummies", "stock": 50 },
+    { "id": 3, "name": "CBD Topical Cream", "price": 39.99, "image": "/cbd.webp", "category": "Topicals", "description": "Relieves muscle pain", "stock": 75 },
+    { "id": 4, "name": "CBD Pet Treats", "price": 24.99, "image": "/cbd.webp", "category": "Pet Products", "description": "Safe for pets", "stock": 200 },
+    { "id": 5, "name": "CBD Sleep Capsules", "price": 34.99, "image": "/cbd.webp", "category": "Capsules", "description": "Helps with sleep", "stock": 150 },
+    { "id": 6, "name": "CBD Bath Bombs", "price": 19.99, "image": "/cbd.webp", "category": "Bath Products", "description": "Relaxing bath bombs", "stock": 80 },
+    { "id": 7, "name": "CBD Vape Cartridge", "price": 59.99, "image": "/cbd.webp", "category": "Vapes", "description": "High-quality vape oil", "stock": 120 },
+    { "id": 8, "name": "CBD Flowers", "price": 14.99, "image": "/cbd.webp", "category": "Flowers", "description": "Pure CBD flowers", "stock": 200 }
   ]
   

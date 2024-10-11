@@ -76,7 +76,7 @@ export default function ProductPage() {
         <div>
           <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
           <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger id="category">
+            <SelectTrigger id="category" data-testid="category-select">
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
@@ -109,23 +109,36 @@ export default function ProductPage() {
         <div>
           <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-1">Sort</label>
           <div className="flex gap-2" id="sort">
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger id="category" data-testid="category-select">
+                <SelectValue placeholder="Select a category" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="Flowers">Flowers</SelectItem>
+                <SelectItem value="Clothing">Clothing</SelectItem>
+                <SelectItem value="Books">Books</SelectItem>
+            </SelectContent>
+            </Select>
+
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
+            <SelectTrigger data-testid="sort-select">
                 <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
+            </SelectTrigger>
+            <SelectContent>
                 <SelectItem value="name">Name</SelectItem>
                 <SelectItem value="price">Price</SelectItem>
-              </SelectContent>
+            </SelectContent>
             </Select>
+
             <Select value={sortOrder} onValueChange={setSortOrder}>
-              <SelectTrigger>
+            <SelectTrigger data-testid="sort-order">
                 <SelectValue placeholder="Order" />
-              </SelectTrigger>
-              <SelectContent>
+            </SelectTrigger>
+            <SelectContent>
                 <SelectItem value="asc">Ascending</SelectItem>
                 <SelectItem value="desc">Descending</SelectItem>
-              </SelectContent>
+            </SelectContent>
             </Select>
           </div>
         </div>
@@ -144,7 +157,7 @@ export default function ProductPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {products.map((product) => (
-            <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div key={product.id} className="product-card bg-white rounded-lg shadow-md overflow-hidden">
               <div className="relative h-48">
                 <Image
                   src={product.image}
@@ -157,7 +170,7 @@ export default function ProductPage() {
               <div className="p-4">
                 <h2 className="text-xl font-semibold mb-2">{product.name}</h2>
                 <p className="text-gray-600 mb-2">Category: {product.category}</p>
-                <p className="text-gray-800 font-bold">${product.price.toFixed(2)}</p>
+                <p className="price text-gray-800 font-bold">${product.price.toFixed(2)}</p>
                 {product.description && (
                   <p className="text-gray-600 mt-2 text-sm">{product.description}</p>
                 )}

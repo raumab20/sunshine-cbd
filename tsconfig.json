@@ -3,7 +3,9 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
+    "target": "ES2023",
     "strict": true,
+    "types":[ "cypress"],
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -26,6 +28,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
+    "cypress/**/*.ts",
     "prisma/seed.js"  // Hier "seed.ts" hinzufügen, da dies die Datei ist, die transpiliert wird.
   ],
   "exclude": ["node_modules"]
