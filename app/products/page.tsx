@@ -123,7 +123,7 @@ export default function ProductPage() {
                     {isOpen ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
                   </Button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="mt-4 space-y-4">
+                <CollapsibleContent className="collapsible-content mt-4 space-y-4">
                   <div className="p-4 bg-slate-800 rounded-lg shadow-lg">
                     <div className="space-y-4">
                       <div>
@@ -226,7 +226,7 @@ export default function ProductPage() {
                     <div className="p-4">
                       <h2 className="text-xl font-semibold mb-2 text-amber-400">{product.name}</h2>
                       <p className="text-amber-200 mb-2">Category: {product.category}</p>
-                      <p className="text-2xl font-bold text-amber-400">${product.price.toFixed(2)}</p>
+                      <p className="price text-2xl font-bold text-amber-400">${product.price.toFixed(2)}</p>
                       {product.description && (
                         <p className="text-amber-100 mt-2 text-sm">{product.description}</p>
                       )}
