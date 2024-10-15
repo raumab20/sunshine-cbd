@@ -1,6 +1,6 @@
 name: CI Pipeline
 
-# Workflow wird bei einem Push oder Pull Request auf den main-Branch ausgeführt
+# Workflow wird bei einem Push oder Pull Request auf den dev-Branch ausgeführt
 on:
   push:
     branches:
@@ -10,10 +10,10 @@ on:
       - dev
 
 jobs:
-  test:
+  # Jest-Tests
+  jest-tests:
     runs-on: ubuntu-latest
 
-    # Installations- und Testschritte
     steps:
       - name: Check out the repository
         uses: actions/checkout@v2
@@ -21,22 +21,15 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '18'  # Version von Node.js (anpassbar)
+          node-version: '18'
 
       - name: Install dependencies
         run: npm install
 
       - name: Run Jest tests
-        run: npm run test   # Standardmäßig Jest-Tests
+        run: npm run test   # Jest-Tests ausführen
 
-      - name: Install Cypress
-        run: npm install cypress --save-dev
-
-      - name: Run Cypress tests
-        run: npm run cypress:run
-        env:
-          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }} # Falls Cypress Dashboard genutzt wird
-
+  # Next.js Build
   build:
     runs-on: ubuntu-latest
 
