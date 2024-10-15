@@ -28,7 +28,9 @@ export const {
         },
         password: { label: "Password", type: "password" },
       },
-      authorize: async (credentials: Partial<Record<"email" | "password", unknown>>) => {
+      authorize: async (
+        credentials: Partial<Record<"email" | "password", unknown>>
+      ) => {
         try {
           if (!credentials?.email || !credentials.password) {
             throw new Error("Bitte E-Mail und Passwort eingeben.");

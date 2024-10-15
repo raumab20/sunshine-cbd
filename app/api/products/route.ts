@@ -1,48 +1,51 @@
-import { PrismaClient } from '@prisma/client';
-import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
-    try {
-      const { searchParams } = new URL(request.url);
-      const category = searchParams.get('category');
-      const minPrice = searchParams.get('minPrice');
-      const maxPrice = searchParams.get('maxPrice');
-      const sortBy = searchParams.get('sortBy');
-      const sortOrder = searchParams.get('sortOrder');
-  
-      // Erstelle die Filter- und Sortierklauseln
-      let whereClause: any = {};
-      if (category) {
-        whereClause.category = category;
-      }
-      if (minPrice || maxPrice) {
-        whereClause.price = {};
-        if (minPrice) whereClause.price.gte = parseFloat(minPrice);
-        if (maxPrice) whereClause.price.lte = parseFloat(maxPrice);
-      }
+  try {
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get("category");
+    const minPrice = searchParams.get("minPrice");
+    const maxPrice = searchParams.get("maxPrice");
+    const sortBy = searchParams.get("sortBy");
+    const sortOrder = searchParams.get("sortOrder");
 
-      let orderBy: any = {};
-      if (sortBy) {
-        orderBy[sortBy] = sortOrder === 'desc' ? 'desc' : 'asc';
-      }
-
-      //console.log('whereClause:', whereClause); // Debugging: Ausgabe der Filterklausel
-      //console.log('orderBy:', orderBy); // Debugging: Ausgabe der Sortierklausel
-  
-      // Führe die Prisma-Abfrage aus
-      const products = await prisma.product.findMany({
-        where: Object.keys(whereClause).length ? whereClause : undefined,
-        orderBy: Object.keys(orderBy).length ? orderBy : undefined,
-      });
-  
-      //console.log('Returned products:', products); // Debugging: Ausgabe der zurückgegebenen Produkte
-  
-      return NextResponse.json(products);
-    } catch (error) {
-      return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+    // Erstelle die Filter- und Sortierklauseln
+    let whereClause: any = {};
+    if (category) {
+      whereClause.category = category;
     }
+    if (minPrice || maxPrice) {
+      whereClause.price = {};
+      if (minPrice) whereClause.price.gte = parseFloat(minPrice);
+      if (maxPrice) whereClause.price.lte = parseFloat(maxPrice);
+    }
+
+    let orderBy: any = {};
+    if (sortBy) {
+      orderBy[sortBy] = sortOrder === "desc" ? "desc" : "asc";
+    }
+
+    //console.log('whereClause:', whereClause); // Debugging: Ausgabe der Filterklausel
+    //console.log('orderBy:', orderBy); // Debugging: Ausgabe der Sortierklausel
+
+    // Führe die Prisma-Abfrage aus
+    const products = await prisma.product.findMany({
+      where: Object.keys(whereClause).length ? whereClause : undefined,
+      orderBy: Object.keys(orderBy).length ? orderBy : undefined,
+    });
+
+    //console.log('Returned products:', products); // Debugging: Ausgabe der zurückgegebenen Produkte
+
+    return NextResponse.json(products);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to fetch products" },
+      { status: 500 }
+    );
+  }
 }
 
 // POST: Neues Produkt erstellen
@@ -54,7 +57,10 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(newProduct);
   } catch (error) {
-    return NextResponse.json({ error: 'Fehler beim Erstellen des Produkts' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Fehler beim Erstellen des Produkts" },
+      { status: 500 }
+    );
   }
 }
 
@@ -69,7 +75,10 @@ export async function PUT(req: Request) {
     });
     return NextResponse.json(updatedProduct);
   } catch (error) {
-    return NextResponse.json({ error: 'Fehler beim Aktualisieren des Produkts' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Fehler beim Aktualisieren des Produkts" },
+      { status: 500 }
+    );
   }
 }
 
@@ -80,8 +89,11 @@ export async function DELETE(req: Request) {
     await prisma.product.delete({
       where: { id },
     });
-    return NextResponse.json({ message: 'Produkt gelöscht' });
+    return NextResponse.json({ message: "Produkt gelöscht" });
   } catch (error) {
-    return NextResponse.json({ error: 'Fehler beim Löschen des Produkts' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Fehler beim Löschen des Produkts" },
+      { status: 500 }
+    );
   }
 }
