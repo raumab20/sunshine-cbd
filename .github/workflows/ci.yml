@@ -43,6 +43,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Baue das Next.js-Projekt
+      - name: Build Next.js project
+        run: npm run build
+
       # Start Next.js Server
       - name: Start Next.js server
         run: npm run start &
@@ -59,7 +63,7 @@ jobs:
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }} # Optional für Cypress Dashboard
 
-  # Next.js Build
+  # Next.js Build für Produktion (falls separat benötigt)
   build:
     runs-on: ubuntu-latest
     steps:
