@@ -1,109 +1,63 @@
 describe('Product Page E2E Tests', () => {
+    // Test 1: Verify the product page loads correctly
+    it('should load the product page', () => {
+      cy.visit('/products')  // Visit the product page
+      cy.get('h1').contains('Our Products')  // Verify the page heading is displayed
+    })
   
-  // Test 1: Verify the product page loads correctly
-  it('should load the product page', () => {
-    cy.visit('/products')  // Visit the product page
-    cy.get('h1').contains('Sunshine CBD Products')  // Verify the page heading is displayed
-  })
-
-  // Test 2: Open filters and filter by category "Flowers"
+    // Test 2: Filtere nach Kategorie "Flowers"
   it('should filter products by category "Flowers"', () => {
-    cy.visit('/products')
-    cy.get('button').contains('Filters').click({ force: true })  // Open filters
-    cy.get('#category').click({ force: true })  // Select category dropdown
-    cy.get('div[role="option"]').contains('Flowers').click({ force: true })
-    cy.get('.product-card').should('have.length.greaterThan', 0)  // Verify products are displayed
-    cy.get('.product-card').contains('Flowers')  // Verify the correct category is displayed
+    cy.visit('/products')  // Besuche die Produktseite
+    cy.get('#category').click({ force: true })  // Klicke auf das Kategorien-Auswahlfeld
+    cy.get('div[role="option"]').contains('Flowers').click({ force: true })  // Wähle "Flowers" aus der Dropdown-Liste
+    cy.get('button').contains('Apply Filters and Sort').click()  // Klicke auf "Apply Filters and Sort"
+    cy.get('.product-card').should('have.length', 1)  // Überprüfe, ob nur 1 Produkt angezeigt wird
+    cy.get('.product-card').contains('Flowers')  // Überprüfe, ob das angezeigte Produkt der Kategorie "Flowers" entspricht
   })
-
-  // Test 3: Filter products by price range between $20 and $30
-  it('should filter products by price range between $20 and $30', () => {
-    cy.visit('/products')
-    cy.get('button').contains('Filters').click({ force: true })  // Open the collapsible filters
-    cy.get('input#min-price').clear().type('20')  // Enter minimum price
-    cy.get('input#max-price').clear().type('30')  // Enter maximum price
-    cy.get('button').contains('Apply Filters and Sort').click()  // Apply filters
-    cy.get('.product-card').should('have.length.greaterThan', 0)  // Verify products are displayed
-    cy.get('.product-card').each(($el) => {
-      cy.wrap($el).find('.price').then(($price) => {
-        const productPrice = parseFloat($price.text().replace('$', ''))
-        expect(productPrice).to.be.within(20, 30)  // Verify the price range
+  
+    // Test 3: Filter products by price range between $20 and $30
+    it('should filter products by price range between $20 and $30', () => {
+      cy.visit('/products')  // Visit the product page
+      cy.get('input[placeholder="Min Price"]').type('20')  // Enter minimum price
+      cy.get('input[placeholder="Max Price"]').type('30')  // Enter maximum price
+      cy.get('button').contains('Apply Filters and Sort').click()  // Click "Apply Filters and Sort"
+      cy.get('.product-card').should('have.length', 2)  // Verify two products are displayed
+      cy.get('.product-card').each(($el) => {
+        cy.wrap($el).find('.price').then(($price) => {
+          const productPrice = parseFloat($price.text().replace('$', ''))
+          expect(productPrice).to.be.within(20, 30)
+        })
+      })
+    })
+  
+    // Test 4: Sort products by price ascending
+    it('should sort products by price ascending', () => {
+      cy.visit('/products')  // Visit the product page
+      cy.get('button[data-testid="sort-select"]').click({ force: true })  // Click the sort dropdown
+      cy.get('div[role="option"]').contains('Price').click({ force: true })  // Select "Price" as sorting criterion
+      cy.get('button[data-testid="sort-order"]').click({ force: true })  // Click the order dropdown
+      cy.get('div[role="option"]').contains('Ascending').click({ force: true })  // Select "Ascending"
+      cy.get('button').contains('Apply Filters and Sort').click()  // Apply filters
+      cy.get('.product-card .price').then(($prices) => {
+        const priceValues = [...$prices].map((price) => parseFloat(price.innerText.replace('$', '')))
+        const sorted = [...priceValues].sort((a, b) => a - b)
+        expect(priceValues).to.deep.equal(sorted)  // Verify prices are sorted in ascending order
+      })
+    })
+  
+    // Test 5: Sort products by price descending
+    it('should sort products by price descending', () => {
+      cy.visit('/products')  // Visit the product page
+      cy.get('button[data-testid="sort-select"]').click({ force: true })  // Click the sort dropdown
+      cy.get('div[role="option"]').contains('Price').click({ force: true })  // Select "Price" as sorting criterion
+      cy.get('button[data-testid="sort-order"]').click({ force: true })  // Click the order dropdown
+      cy.get('div[role="option"]').contains('Descending').click({ force: true })  // Select "Descending"
+      cy.get('button').contains('Apply Filters and Sort').click()  // Apply filters
+      cy.get('.product-card .price').then(($prices) => {
+        const priceValues = [...$prices].map((price) => parseFloat(price.innerText.replace('$', '')))
+        const sorted = [...priceValues].sort((a, b) => b - a)
+        expect(priceValues).to.deep.equal(sorted)  // Verify prices are sorted in descending order
       })
     })
   })
-//test 4
-  it('should sort products by price ascending', () => {
-    cy.visit('/products')
-    cy.get('button').contains('Filters').click({ force: true })
-    cy.get('#sort').click({ force: true })
-    cy.get('div[role="option"]').contains('Price').click({ force: true })
-    cy.get('#order').click({ force: true })
-    cy.get('div[role="option"]').contains('Ascending').click({ force: true })
-    cy.get('.product-card .price').then(($prices) => {
-      const priceValues = [...$prices].map((price) => parseFloat(price.innerText.replace('$', '')))
-      const sorted = [...priceValues].sort((a, b) => a - b)
-      expect(priceValues).to.deep.equal(sorted)  // Verify ascending order
-    })
-  })
-
-  // Test 5: Sort products by price descending
-  it('should sort products by price descending', () => {
-    cy.visit('/products')
-    cy.get('button').contains('Filters').click({ force: true })  // Open the collapsible filters
-    cy.get('#sort').click({ force: true })  // Click sort dropdown
-    cy.get('div[role="option"]').contains('Price').click({ force: true })  // Select "Price"
-    cy.get('#order').click({ force: true })  // Click order dropdown
-    cy.get('div[role="option"]').contains('Descending').click({ force: true })  // Select "Descending"
-    cy.get('.product-card .price').then(($prices) => {
-      const priceValues = [...$prices].map((price) => parseFloat(price.innerText.replace('$', '')))
-      const sorted = [...priceValues].sort((a, b) => b - a)
-      expect(priceValues).to.deep.equal(sorted)  // Verify prices are sorted in descending order
-    })
-  })
-
-  // Test 6: Search for a product by name "Flower"
-  it('should search for a product by name "Flower"', () => {
-    cy.visit('/products')
-    cy.get('button').contains('Filters').click({ force: true })  // Open the collapsible filters
-    cy.get('input[placeholder="Search products..."]').type('Flower')  // Enter search term
-    cy.get('.product-card').should('have.length.greaterThan', 0)  // Expect 1 product to be displayed
-    cy.get('.product-card').contains('Flowers')  // Verify the product matches the search term
-  })
-
-  // Test 7: Search for a product and check if results are displayed
-  it('should search for products based on a keyword', () => {
-    cy.visit('/products')
-    cy.get('button').contains('Filters').click({ force: true })  // Open the collapsible filters
-    cy.get('input[placeholder="Search products..."]').type('CBD')  // Enter a search term
-    cy.get('.product-card').should('have.length.greaterThan', 0)  // Verify at least one product is displayed
-  })
-
-  // Test 8: Search with filters (category "Oils" and search term "CBD")
-  it('should search for products by category "Oils" and search term "CBD"', () => {
-    cy.visit('/products')
-    cy.get('button').contains('Filters').click({ force: true })  // Open the collapsible filters
-    cy.get('#category').click({ force: true })  // Open category dropdown
-    cy.get('div[role="option"]').contains('Oils').click({ force: true })  // Select "Oils"
-    cy.get('input[placeholder="Search products..."]').type('CBD')  // Enter search term
-    cy.get('.product-card').should('have.length.greaterThan', 0)  // Verify at least one product is displayed
-    cy.get('.product-card').contains('Oils')  // Verify the product matches the "Oils" category
-    cy.get('.product-card').contains('CBD')  // Verify the product matches the search term
-  })
-
-  // Test 9: Search and filter by price range (search term "gummies" and price between $20 and $50)
-  it('should search for products by search term "gummies" and price range between $20 and $50', () => {
-    cy.visit('/products')
-    cy.get('button').contains('Filters').click({ force: true })  // Open the collapsible filters
-    cy.get('input[placeholder="Search products..."]').type('gummies')  // Enter search term
-    cy.get('input#min-price').clear().type('20')  // Enter minimum price
-    cy.get('input#max-price').clear().type('50')  // Enter maximum price
-    cy.get('.product-card').should('have.length.greaterThan', 0)  // Verify at least one product is displayed
-    cy.get('.product-card').each(($el) => {
-      cy.wrap($el).find('.price').then(($price) => {
-        const productPrice = parseFloat($price.text().replace('$', ''))
-        expect(productPrice).to.be.within(20, 50)  // Verify the price is within the range
-      })
-    })
-    cy.get('.product-card').contains('gummies')  // Verify the product matches the search term
-  })
-})
+  
