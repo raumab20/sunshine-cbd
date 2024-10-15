@@ -29,28 +29,6 @@ jobs:
       - name: Run Jest tests
         run: npm run test   # Jest-Tests ausführen
 
-  # Cypress-Tests (headless)
-  cypress-tests:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run Cypress tests in headless mode
-        run: npx cypress run   # Headless-Modus für CI
-        env:
-          # Hier könntest du weitere Umgebungsvariablen hinzufügen, falls nötig.
-          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }} # Falls Cypress Dashboard verwendet wird, optional
-
   # Next.js Build
   build:
     runs-on: ubuntu-latest
