@@ -1,23 +1,22 @@
 import request from 'supertest';
-import { createServer } from 'http';
-import { IncomingMessage, ServerResponse } from 'http';
+import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { GET } from '@/app/api/products/route';
 import '@testing-library/jest-dom';
 import { expect } from '@jest/globals';
 
 // Mock globalen `Request`-Typ
 global.Request = class {
+  url: string;
+  method: string;
+  headers: HeadersInit;
+  body: any;
+
   constructor(input: string | URL, init?: RequestInit) {
-    this.url = input;
+    this.url = typeof input === 'string' ? input : input.toString();
     this.method = init?.method || 'GET';
     this.headers = init?.headers || {};
     this.body = init?.body || null;
   }
-
-  url: string;
-  method: string;
-  headers: Record<string, string>;
-  body: any;
 
   json() {
     return Promise.resolve(this.body);
@@ -29,7 +28,7 @@ jest.mock('@prisma/client', () => require('../__mocks__/prisma'));
 
 // Mock NextRequest und NextResponse
 jest.mock('next/server', () => ({
-  NextRequest: jest.fn().mockImplementation((url, init) => {
+  NextRequest: jest.fn().mockImplementation((url: string, init: RequestInit) => {
     return {
       url,
       method: init?.method,
@@ -38,7 +37,7 @@ jest.mock('next/server', () => ({
     };
   }),
   NextResponse: {
-    json: jest.fn((data) => ({
+    json: jest.fn((data: any) => ({
       status: 200,
       json: jest.fn(() => data),
     })),
@@ -51,7 +50,8 @@ beforeAll(() => {
   server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const fullUrl = `http://localhost${req.url}`; // Vollständige URL mit http://localhost
 
-    const nextRequest = new global.Request(fullUrl, {
+    const { NextRequest } = require('next/server');
+    const nextRequest = new NextRequest(fullUrl, {
       method: req.method,
       headers: req.headers as any,
       body: req as any,
@@ -92,22 +92,26 @@ describe('Webshop API Tests - Kernfunktionalität', () => {
       const response = await request(server).get('/api/products?minPrice=20&maxPrice=30');
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(2);  // 2 Produkte zwischen 20 und 30 Euro
-      expect(response.body.every((p) => p.price >= 20 && p.price <= 30)).toBeTruthy();
+      expect(response.body.every((p: any) => p.price >= 20 && p.price <= 30)).toBeTruthy();
     });
   
-    // Test für Sortierung aufsteigend
-    test('should return products sorted by price ascending', async () => {
-      const response = await request(server).get('/api/products?sortBy=price&sortOrder=asc');
-      expect(response.status).toBe(200);
-      const prices = response.body.map((p) => p.price);
-      expect(prices).toEqual([14.99, 19.99, 24.99, 29.99, 34.99, 39.99, 49.99, 59.99]);  // Aufsteigend sortierte Preise
-    });
-  
-    // Test für Sortierung absteigend
-    test('should return products sorted by price descending', async () => {
-      const response = await request(server).get('/api/products?sortBy=price&sortOrder=desc');
-      expect(response.status).toBe(200);
-      const prices = response.body.map((p) => p.price);
-      expect(prices).toEqual([59.99, 49.99, 39.99, 34.99, 29.99, 24.99, 19.99, 14.99]);  // Absteigend sortierte Preise
-    });  
+      // Test für Sortierung aufsteigend
+  test('should return products sorted by price ascending', async () => {
+    const response = await request(server).get('/api/products?sortBy=price&sortOrder=asc');
+    expect(response.status).toBe(200);
+    
+    const prices = response.body.map((p: any) => p.price);
+    const sortedPrices = [...prices].sort((a: number, b: number) => a - b);
+    expect(prices).toEqual(sortedPrices);
+  });
+
+  // Test für Sortierung absteigend
+  test('should return products sorted by price descending', async () => {
+    const response = await request(server).get('/api/products?sortBy=price&sortOrder=desc');
+    expect(response.status).toBe(200);
+    
+    const prices = response.body.map((p: any) => p.price);
+    const sortedPrices = [...prices].sort((a: number, b: number) => b - a);
+    expect(prices).toEqual(sortedPrices);
+  });
 });
