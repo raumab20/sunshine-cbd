@@ -45,7 +45,7 @@ jobs:
 
       # Start Next.js Server
       - name: Start Next.js server
-        run: npm run start &   # Server im Hintergrund starten
+        run: npm run start &
         env:
           NEXT_PUBLIC_ENV: test
 
