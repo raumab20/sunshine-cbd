@@ -1,0 +1,82 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  # Jest-Tests
+  jest-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Jest tests
+        run: npm run test   # Jest-Tests ausführen
+
+  # Cypress-Tests (headless)
+  cypress-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      # Baue das Next.js-Projekt
+      - name: Build Next.js project
+        run: npm run build
+
+      # Start Next.js Server
+      - name: Start Next.js server
+        run: npm run start &
+        env:
+          NEXT_PUBLIC_ENV: test
+
+      # Warte, bis der Server bereit ist
+      - name: Wait for Next.js server to be ready
+        run: npx wait-on http://localhost:3000
+
+      # Cypress-Tests im Headless-Modus
+      - name: Run Cypress tests in headless mode
+        run: npx cypress run
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }} # Optional für Cypress Dashboard
+
+  # Next.js Build für Produktion (falls separat benötigt)
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the Next.js project
+        run: npm run build
