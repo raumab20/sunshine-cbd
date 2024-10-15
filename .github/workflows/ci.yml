@@ -1,6 +1,5 @@
 name: CI Pipeline
 
-# Workflow wird bei einem Push oder Pull Request auf den dev-Branch ausgeführt
 on:
   push:
     branches:
@@ -29,10 +28,40 @@ jobs:
       - name: Run Jest tests
         run: npm run test   # Jest-Tests ausführen
 
+  # Cypress-Tests (headless)
+  cypress-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      # Start Next.js Server
+      - name: Start Next.js server
+        run: npm run start &   # Server im Hintergrund starten
+        env:
+          NEXT_PUBLIC_ENV: test
+
+      # Warte, bis der Server bereit ist
+      - name: Wait for Next.js server to be ready
+        run: npx wait-on http://localhost:3000
+
+      # Cypress-Tests im Headless-Modus
+      - name: Run Cypress tests in headless mode
+        run: npx cypress run
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }} # Optional für Cypress Dashboard
+
   # Next.js Build
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out the repository
         uses: actions/checkout@v2
