@@ -8,9 +8,9 @@ describe('Product Page E2E Tests', () => {
     // Test 2: Filtere nach Kategorie "Flowers"
   it('should filter products by category "Flowers"', () => {
     cy.visit('/products')
-    cy.get('#category').click({ force: true }) 
+    cy.get('.category').click({ force: true }) 
     cy.get('div[role="option"]').contains('Flowers').click({ force: true }) 
-    cy.get('button').contains('Apply Filters and Sort').click() 
+    cy.wait(500)
     cy.get('.product-card').should('have.length', 1)  
     cy.get('.product-card').contains('Flowers') 
   })
@@ -20,7 +20,7 @@ describe('Product Page E2E Tests', () => {
       cy.visit('/products')  // Visit the product page
       cy.get('input[placeholder="Min Price"]').type('20')  // Enter minimum price
       cy.get('input[placeholder="Max Price"]').type('30')  // Enter maximum price
-      cy.get('button').contains('Apply Filters and Sort').click()  // Click "Apply Filters and Sort"
+      cy.wait(500)
       cy.get('.product-card').should('have.length', 2)  // Verify two products are displayed
       cy.get('.product-card').each(($el) => {
         cy.wrap($el).find('.price').then(($price) => {
@@ -34,10 +34,8 @@ describe('Product Page E2E Tests', () => {
     it('should sort products by price ascending', () => {
       cy.visit('/products')  
       cy.get('button[data-testid="sort-select"]').click({ force: true }) 
-      cy.get('div[role="option"]').contains('Price').click({ force: true }) 
-      cy.get('button[data-testid="sort-order"]').click({ force: true })  
-      cy.get('div[role="option"]').contains('Ascending').click({ force: true }) 
-      cy.get('button').contains('Apply Filters and Sort').click()  
+      cy.get('div[role="option"]').contains('Price (Low to High)').click({ force: true }) 
+      cy.wait(500)
       cy.get('.product-card .price').then(($prices) => {
         const priceValues = [...$prices].map((price) => parseFloat(price.innerText.replace('$', '')))
         const sorted = [...priceValues].sort((a, b) => a - b)
@@ -49,10 +47,8 @@ describe('Product Page E2E Tests', () => {
     it('should sort products by price descending', () => {
       cy.visit('/products')  
       cy.get('button[data-testid="sort-select"]').click({ force: true }) 
-      cy.get('div[role="option"]').contains('Price').click({ force: true })
-      cy.get('button[data-testid="sort-order"]').click({ force: true }) 
-      cy.get('div[role="option"]').contains('Descending').click({ force: true })  
-      cy.get('button').contains('Apply Filters and Sort').click() 
+      cy.get('div[role="option"]').contains('Price (High to Low)').click({ force: true }) 
+      cy.wait(500)
       cy.get('.product-card .price').then(($prices) => {
         const priceValues = [...$prices].map((price) => parseFloat(price.innerText.replace('$', '')))
         const sorted = [...priceValues].sort((a, b) => b - a)

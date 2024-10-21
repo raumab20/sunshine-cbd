@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Image from 'next/image'
+import { useState, useEffect, useMemo } from 'react'
 import { Product } from '../types/Product'
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -12,29 +11,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Loader2 } from "lucide-react"
+import { Loader2, Search, Sun } from "lucide-react"
+import { debounce } from 'lodash'
+import ProductCard from '@/components/ProductCard' // Import der neuen Komponente
 
 export default function ProductPage() {
-  const [products, setProducts] = useState<Product[]>([])
+  const [allProducts, setAllProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [category, setCategory] = useState('all')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
-  const [sortBy, setSortBy] = useState('name')
-  const [sortOrder, setSortOrder] = useState('asc')
+  const [sort, setSort] = useState('name_asc')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [fetchedProducts, setFetchedProducts] = useState<Product[]>([])
 
   const fetchProducts = async () => {
     setLoading(true)
     setError(null)
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
     const url = new URL(`${baseUrl}/api/products`)
+
+    try {
+      const res = await fetch(`${baseUrl}/api/products`)
+      if (!res.ok) {
+        throw new Error(`Failed to fetch products: ${res.status}`)
+      }
+      const data = await res.json()
+      setFetchedProducts(data)
+    }
+    catch (error) {
+      console.error('Error fetching products:', error)
+      setError('Failed to fetch products. Please try again later.')
+    } finally {
+      setLoading(false)
+    }
     
     if (category && category !== 'all') url.searchParams.append('category', category)
     if (minPrice) url.searchParams.append('minPrice', minPrice)
     if (maxPrice) url.searchParams.append('maxPrice', maxPrice)
-    if (sortBy) url.searchParams.append('sortBy', sortBy)
-    if (sortOrder) url.searchParams.append('sortOrder', sortOrder)
+    if (sort) {
+      const [sortBy, sortOrder] = sort.split('_')
+      url.searchParams.append('sortBy', sortBy)
+      url.searchParams.append('sortOrder', sortOrder)
+    }
 
     try {
       const res = await fetch(url.toString())
@@ -42,7 +63,8 @@ export default function ProductPage() {
         throw new Error(`Failed to fetch products: ${res.status}`)
       }
       const data = await res.json()
-      setProducts(data)
+      setAllProducts(data)
+      setFilteredProducts(data)
     } catch (error) {
       console.error('Error fetching products:', error)
       setError('Failed to fetch products. Please try again later.')
@@ -51,135 +73,135 @@ export default function ProductPage() {
     }
   }
 
-  useEffect(() => {
-    fetchProducts()
-  }, [])
+  const debouncedFetchProducts = useMemo(
+    () => debounce(fetchProducts, 300),
+    [category, minPrice, maxPrice, sort]
+  )
 
-  const handleApplyFilters = () => {
-    fetchProducts()
-  }
+  useEffect(() => {
+    debouncedFetchProducts()
+    return () => debouncedFetchProducts.cancel()
+  }, [debouncedFetchProducts])
+
+  const filterProducts = useMemo(() => {
+    return debounce((query: string) => {
+      const lowercaseQuery = query.toLowerCase()
+      const filtered = allProducts.filter(product =>
+        product.name.toLowerCase().includes(lowercaseQuery) ||
+        product.description?.toLowerCase().includes(lowercaseQuery) ||
+        product.category.toLowerCase().includes(lowercaseQuery)
+      )
+      setFilteredProducts(filtered)
+    }, 300)
+  }, [allProducts])
+
+  useEffect(() => {
+    filterProducts(searchQuery)
+    return () => filterProducts.cancel()
+  }, [searchQuery, filterProducts])
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
-        <p className="text-gray-600">{error}</p>
+      <div className="container mx-auto px-4 py-8 text-yellow-100">
+        <h1 className="text-2xl font-bold text-red-400 mb-4">Error</h1>
+        <p>{error}</p>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">Our Products</h1>
-      
-      <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div>
-          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger id="category" data-testid="category-select">
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="Flowers">Flowers</SelectItem>
-              <SelectItem value="Clothing">Clothing</SelectItem>
-              <SelectItem value="Books">Books</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="min-h-screen bg-gray-900 text-yellow-100">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold mb-8 text-center text-yellow-300 flex items-center justify-center">
+          <Sun className="mr-2 h-8 w-8" />
+          Our Products
+        </h1>
         
-        <div>
-          <label htmlFor="price-range" className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
-          <div className="flex gap-2" id="price-range">
+        <div className="mb-8 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input
-              type="number"
-              placeholder="Min Price"
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-            />
-            <Input
-              type="number"
-              placeholder="Max Price"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 w-full bg-gray-800 border-gray-700 text-yellow-100 placeholder-gray-400"
             />
           </div>
-        </div>
-        
-        <div>
-          <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-1">Sort</label>
-          <div className="flex gap-2" id="sort">
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger id="category" data-testid="category-select">
-                <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="Flowers">Flowers</SelectItem>
-                <SelectItem value="Clothing">Clothing</SelectItem>
-                <SelectItem value="Books">Books</SelectItem>
-            </SelectContent>
-            </Select>
 
-            <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger data-testid="sort-select">
-                <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="name">Name</SelectItem>
-                <SelectItem value="price">Price</SelectItem>
-            </SelectContent>
-            </Select>
-
-            <Select value={sortOrder} onValueChange={setSortOrder}>
-            <SelectTrigger data-testid="sort-order">
-                <SelectValue placeholder="Order" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="asc">Ascending</SelectItem>
-                <SelectItem value="desc">Descending</SelectItem>
-            </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
-      <div className="mb-8 flex justify-center">
-        <Button onClick={handleApplyFilters}>
-          Apply Filters and Sort
-        </Button>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
-            <div key={product.id} className="product-card bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="relative h-48">
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  layout="fill"
-                  objectFit="cover"
-                  className="transition-transform duration-300 ease-in-out transform hover:scale-105"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="category" className="category text-sm font-medium text-yellow-200">Category</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger id="category" data-testid="category-select" className="bg-gray-800 border-gray-700 text-yellow-100">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700 text-yellow-100">
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {fetchedProducts.map((product) => (
+                    <SelectItem key={product.id} value={product.category}>{product.category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="price-range" className="text-sm font-medium text-yellow-200">Price Range</Label>
+              <div className="flex gap-2" id="price-range">
+                <Input
+                  type="number"
+                  placeholder="Min Price"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-yellow-100 placeholder-gray-400"
+                />
+                <Input
+                  type="number"
+                  placeholder="Max Price"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-yellow-100 placeholder-gray-400"
                 />
               </div>
-              <div className="p-4">
-                <h2 className="text-xl font-semibold mb-2">{product.name}</h2>
-                <p className="text-gray-600 mb-2">Category: {product.category}</p>
-                <p className="price text-gray-800 font-bold">${product.price.toFixed(2)}</p>
-                {product.description && (
-                  <p className="text-gray-600 mt-2 text-sm">{product.description}</p>
-                )}
-                <p className="text-gray-600 mt-2 text-sm">In Stock: {product.stock}</p>
-              </div>
             </div>
-          ))}
+            
+            <div>
+              <Label htmlFor="sort" className="text-sm font-medium text-yellow-200">Sort</Label>
+              <Select value={sort} onValueChange={setSort}>
+                <SelectTrigger id="sort" data-testid="sort-select" className="bg-gray-800 border-gray-700 text-yellow-100">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700 text-yellow-100">
+                  <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name_desc">Name (Z-A)</SelectItem>
+                  <SelectItem value="price_asc">Price (Low to High)</SelectItem>
+                  <SelectItem value="price_desc">Price (High to Low)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
-      )}
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-yellow-300" />
+          </div>
+        ) : (
+          <>
+            {filteredProducts.length === 0 ? (
+              <div className="text-center text-yellow-200 text-xl mt-8">
+                No products found.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
