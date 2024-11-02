@@ -14,6 +14,7 @@ import {
 import { Loader2, Search, Sun } from "lucide-react"
 import { debounce } from 'lodash'
 import ProductCard from '@/components/ProductCard' // Import der neuen Komponente
+import Link from 'next/link'
 
 export default function ProductPage() {
   const [allProducts, setAllProducts] = useState<Product[]>([])
@@ -195,7 +196,9 @@ export default function ProductPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                  <Link key={product.id} href={`/products/${product.id}`}>
+                    <ProductCard key={product.id} product={product} />
+                </Link>
                 ))}
               </div>
             )}

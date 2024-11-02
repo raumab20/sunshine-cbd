@@ -1,15 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Sun, Leaf, Droplet } from "lucide-react";
+import ProductCard from "@/components/ProductCard";
+import { Product } from "./types/Product";
 
 const products = [
-  { id: 1, name: "CBD Oil Tincture", price: 49.99, image: "/cbd.webp" },
-  { id: 2, name: "CBD Gummies", price: 29.99, image: "/cbd.webp" },
-  { id: 3, name: "CBD Topical Cream", price: 39.99, image: "/cbd.webp" },
-  { id: 4, name: "CBD Pet Treats", price: 24.99, image: "/cbd.webp" },
-  { id: 5, name: "CBD Sleep Capsules", price: 34.99, image: "/cbd.webp" },
-  { id: 6, name: "CBD Bath Bombs", price: 19.99, image: "/cbd.webp" },
-];
+  { "id": "1", "name": "CBD Oil Tincture", "price": 49.99, "image": "/cbd.webp", "category": "Oils", "description": "High-quality CBD oil", "stock": 100 },
+  { "id": "2", "name": "CBD Gummies", "price": 29.99, "image": "/cbd.webp", "category": "Edibles", "description": "Delicious CBD gummies", "stock": 50 },
+  { "id": "3", "name": "CBD Topical Cream", "price": 39.99, "image": "/cbd.webp", "category": "Topicals", "description": "Relieves muscle pain", "stock": 75 },
+  { "id": "4", "name": "CBD Pet Treats", "price": 24.99, "image": "/cbd.webp", "category": "Pet Products", "description": "Safe for pets", "stock": 200 },
+  { "id": "5", "name": "CBD Sleep Capsules", "price": 34.99, "image": "/cbd.webp", "category": "Capsules", "description": "Helps with sleep", "stock": 150 },
+] as Product[];
 
 const SunIcon = () => (
   <svg
@@ -108,24 +109,9 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-center text-yellow-300 mb-12">
             Our Products
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 ">
             {products.map((product) => (
-              <div key={product.id} className="bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105">
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  width={300}
-                  height={300}
-                  className="w-full h-64 object-cover"
-                />
-                <div className="p-4">
-                  <h3 className="text-xl font-semibold mb-2 text-yellow-300">{product.name}</h3>
-                  <p className="text-gray-300 mb-4">${product.price.toFixed(2)}</p>
-                  <button className="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-2 px-4 rounded transition duration-300">
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </div>
