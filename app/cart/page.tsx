@@ -2,34 +2,31 @@
 import { NextPage } from "next";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 const CartPage: NextPage = () => {
-  const [cart, setCart] = useState<any[]>([]); // Initialisiere mit einem leeren Array
+  const [cart, setCart] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const { data: session, status } = useSession(); // session und status von next-auth holen
+  const { data: session, status } = useSession();
 
-  // Funktion, um den Warenkorb abzurufen
   const fetchCart = async () => {
     if (!session) {
-      setError("Nicht authentifiziert");
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    setError(null);
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const url = new URL(`${baseUrl}/api/cart`);
 
     try {
       const res = await fetch(url.toString(), {
-        method: "POST", // Verwende POST, um die Session zu senden
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ session }), // Sende die Session im Body der Anfrage
+        body: JSON.stringify({ session }),
       });
 
       if (!res.ok) {
@@ -37,49 +34,164 @@ const CartPage: NextPage = () => {
       }
 
       const data = await res.json();
-      setCart(data); // Setze den Warenkorb mit den zurückgegebenen Daten
+      setCart(data);
     } catch (error) {
       console.error("Error fetching cart:", error);
-      setError("Failed to fetch cart. Please try again later.");
+      window.location.reload();
     } finally {
       setLoading(false);
     }
   };
 
-  // Verwende useEffect, um den Warenkorb nach dem ersten Rendern abzurufen
+  const deleteCartItem = async (cartItemId: string) => {
+    setCart((prevCart) => prevCart.filter((item) => item.id !== cartItemId));
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const url = new URL(`${baseUrl}/api/cart/item`);
+
+    try {
+      const res = await fetch(url.toString(), {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session, cartItemId }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to delete cart item: ${res.status}`);
+      }
+    } catch (error) {
+      console.error("Error deleting cart item:", error);
+      window.location.reload();
+    }
+  };
+
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item.id === itemId ? { ...item, quantity: Math.max(1, quantity) } : item
+      )
+    );
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const url = new URL(`${baseUrl}/api/cart/item`);
+
+    try {
+      const res = await fetch(url.toString(), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ session, itemId, quantity }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to update cart item quantity: ${res.status}`);
+      }
+    } catch (error) {
+      console.error("Error updating cart item quantity:", error);
+      window.location.reload();
+    }
+  };
+
   useEffect(() => {
     if (session && status === "authenticated") {
-      fetchCart(); // Cart wird nur abgerufen, wenn der User authentifiziert ist
+      fetchCart();
     }
-  }, [session, status]); // Läuft, wenn session oder status sich ändern
+  }, [session, status]);
 
-  // Ladezustand anzeigen
   if (loading) {
-    return <div>Lade Warenkorb...</div>;
+    return (
+      <div className="text-center py-6 text-gray-200">Loading Cart...</div>
+    );
   }
 
-  // Fehler anzeigen, wenn der Abruf fehlgeschlagen ist
-  if (error) {
-    return <div>Fehler: {error}</div>;
-  }
-
-  // Wenn der Warenkorb leer ist, zeige eine Nachricht an
   if (cart.length === 0) {
-    return <div>Der Warenkorb ist leer.</div>;
+    return (
+      <div className="text-center py-6 text-gray-200">
+        <p>The cart is empty.</p>
+        <Link
+          className="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
+          href="/products"
+        >
+          Continue Shopping
+        </Link>
+      </div>
+    );
   }
 
-  // Warenkorbinhalt anzeigen
+  const calculateTotalPrice = () => {
+    return cart
+      .reduce((total, item) => total + item.product.price * item.quantity, 0)
+      .toFixed(2);
+  };
+
   return (
-    <div>
-      <h1>Warenkorb</h1>
-      <ul>
+    <div className="max-w-3xl mx-auto p-6 bg-gray-900 shadow-md rounded-lg">
+      <h1 className="text-2xl font-bold text-center text-gray-100 mb-8">
+        Cart
+      </h1>
+      <ul className="space-y-4">
         {cart.map((item) => (
-          <li key={item.id}>
-            Produkt: {item.productId} - Menge: {item.quantity}
+          <li
+            key={item.id}
+            className="flex items-center justify-between border-b border-gray-700 pb-4"
+          >
+            <img
+              src={item.product.image}
+              alt={item.product.name}
+              className="w-16 h-16 rounded-md"
+            />
+            <div className="flex-1 ml-4">
+              <h2 className="text-lg font-semibold text-gray-100">
+                {item.product.name}
+              </h2>
+              <p className="text-sm text-gray-400">{item.product.category}</p>
+              <p className="font-bold mt-1 text-gray-200">
+                {item.product.price.toFixed(2)} €
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                className="px-2 py-1 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+              >
+                -
+              </button>
+              <span className="px-3 text-lg text-gray-100">
+                {item.quantity}
+              </span>
+              <button
+                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                className="px-2 py-1 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+              >
+                +
+              </button>
+            </div>
+            <p className="ml-6 font-semibold text-gray-100">
+              {(item.product.price * item.quantity).toFixed(2)} €
+            </p>
+            <button
+              onClick={() => deleteCartItem(item.id)}
+              className="ml-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-500"
+            >
+              Delete
+            </button>
           </li>
         ))}
       </ul>
-      <br />
+      <div className="flex items-center justify-between mt-8 border-t border-gray-700 pt-4">
+        <Link
+          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
+          href="/products"
+        >
+          Continue Shopping
+        </Link>
+        <span className="text-xl font-bold text-gray-100">
+          Total Price: {calculateTotalPrice()} €
+        </span>
+      </div>
     </div>
   );
 };

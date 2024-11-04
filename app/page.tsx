@@ -5,11 +5,51 @@ import ProductCard from "@/components/ProductCard";
 import { Product } from "./types/Product";
 
 const products = [
-  { "id": "1", "name": "CBD Oil Tincture", "price": 49.99, "image": "/cbd.webp", "category": "Oils", "description": "High-quality CBD oil", "stock": 100 },
-  { "id": "2", "name": "CBD Gummies", "price": 29.99, "image": "/cbd.webp", "category": "Edibles", "description": "Delicious CBD gummies", "stock": 50 },
-  { "id": "3", "name": "CBD Topical Cream", "price": 39.99, "image": "/cbd.webp", "category": "Topicals", "description": "Relieves muscle pain", "stock": 75 },
-  { "id": "4", "name": "CBD Pet Treats", "price": 24.99, "image": "/cbd.webp", "category": "Pet Products", "description": "Safe for pets", "stock": 200 },
-  { "id": "5", "name": "CBD Sleep Capsules", "price": 34.99, "image": "/cbd.webp", "category": "Capsules", "description": "Helps with sleep", "stock": 150 },
+  {
+    id: "1",
+    name: "CBD Oil Tincture",
+    price: 49.99,
+    image: "/cbd.webp",
+    category: "Oils",
+    description: "High-quality CBD oil",
+    stock: 100,
+  },
+  {
+    id: "2",
+    name: "CBD Gummies",
+    price: 29.99,
+    image: "/cbd.webp",
+    category: "Edibles",
+    description: "Delicious CBD gummies",
+    stock: 50,
+  },
+  {
+    id: "3",
+    name: "CBD Topical Cream",
+    price: 39.99,
+    image: "/cbd.webp",
+    category: "Topicals",
+    description: "Relieves muscle pain",
+    stock: 75,
+  },
+  {
+    id: "4",
+    name: "CBD Pet Treats",
+    price: 24.99,
+    image: "/cbd.webp",
+    category: "Pet Products",
+    description: "Safe for pets",
+    stock: 200,
+  },
+  {
+    id: "5",
+    name: "CBD Sleep Capsules",
+    price: 34.99,
+    image: "/cbd.webp",
+    category: "Capsules",
+    description: "Helps with sleep",
+    stock: 150,
+  },
 ] as Product[];
 
 const SunIcon = () => (
@@ -51,7 +91,8 @@ export default function Home() {
                 </h1>
               </div>
               <p className="text-xl text-yellow-100 mb-6">
-                Discover our premium, sun-grown CBD products for a brighter, healthier you.
+                Discover our premium, sun-grown CBD products for a brighter,
+                healthier you.
               </p>
               <Link
                 href="/products"
@@ -81,23 +122,31 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-gray-700 p-6 rounded-lg shadow-md text-center">
               <Sun className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2 text-yellow-300">Sun-Grown</h3>
+              <h3 className="text-xl font-semibold mb-2 text-yellow-300">
+                Sun-Grown
+              </h3>
               <p className="text-gray-300">
-                Our CBD is cultivated under natural sunlight for the highest quality.
+                Our CBD is cultivated under natural sunlight for the highest
+                quality.
               </p>
             </div>
             <div className="bg-gray-700 p-6 rounded-lg shadow-md text-center">
               <Leaf className="w-12 h-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2 text-yellow-300">100% Organic</h3>
+              <h3 className="text-xl font-semibold mb-2 text-yellow-300">
+                100% Organic
+              </h3>
               <p className="text-gray-300">
                 We use organic farming practices to ensure pure, clean products.
               </p>
             </div>
             <div className="bg-gray-700 p-6 rounded-lg shadow-md text-center">
               <Droplet className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2 text-yellow-300">Full Spectrum</h3>
+              <h3 className="text-xl font-semibold mb-2 text-yellow-300">
+                Full Spectrum
+              </h3>
               <p className="text-gray-300">
-                Experience the full benefits of CBD with our whole-plant extracts.
+                Experience the full benefits of CBD with our whole-plant
+                extracts.
               </p>
             </div>
           </div>
@@ -116,7 +165,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-      
+
       <section className="bg-gray-800 py-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-yellow-300 mb-4">

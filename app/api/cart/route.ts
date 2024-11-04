@@ -8,7 +8,6 @@ async function getUser(session: any) {
     return null;
   }
 
-  // Finde den Benutzer anhand der E-Mail in der Session
   const user = await prisma.user.findUnique({
     where: { email: session.user.email }, // Verwende die E-Mail aus der Session
   });
@@ -18,7 +17,7 @@ async function getUser(session: any) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { session } = await req.json(); // Session aus dem Request-Body holen
+    const { session } = await req.json();
 
     if (!session) {
       return NextResponse.json(
@@ -55,26 +54,27 @@ export async function POST(req: NextRequest) {
       where: { cartId: cart.id },
     });
 
-    if (cartItems.length === 0) {
-      // Füge einen Artikel hinzu, wenn der Warenkorb leer ist
-      const product = await prisma.product.findFirst(); // Beispiel: Nimm das erste Produkt aus der DB
-      if (product) {
-        await prisma.cartItem.create({
-          data: {
-            cartId: cart.id,
-            productId: product.id,
-            quantity: 1, // Setze die Menge auf 1
+    // Ergänze jedes CartItem um die Produktinformationen
+    const cartItemsWithProductData = await Promise.all(
+      cartItems.map(async (item) => {
+        const product = await prisma.product.findUnique({
+          where: { id: item.productId },
+          select: {
+            name: true,
+            price: true,
+            image: true,
+            category: true,
+            description: true,
           },
         });
-      }
-    }
+        return {
+          ...item,
+          product,
+        };
+      })
+    );
 
-    // Lade die aktualisierten Artikel des Warenkorbs
-    const updatedCartItems = await prisma.cartItem.findMany({
-      where: { cartId: cart.id },
-    });
-
-    return NextResponse.json(updatedCartItems); // Gib die Artikel des Warenkorbs zurück
+    return NextResponse.json(cartItemsWithProductData);
   } catch (error) {
     console.error(
       "Fehler beim Abrufen oder Aktualisieren des Warenkorbs:",

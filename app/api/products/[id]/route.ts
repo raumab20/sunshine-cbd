@@ -4,14 +4,20 @@ import { ObjectId } from "mongodb"; // Importiere ObjectId
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     // Extrahiere die Produkt-ID aus den params
     const { id } = params;
 
     // Überprüfe, ob die ID eine gültige MongoDB ObjectId ist
     if (!ObjectId.isValid(id)) {
-      return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid product ID" },
+        { status: 400 }
+      );
     }
 
     // Finde das Produkt basierend auf der ID
@@ -28,7 +34,6 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
     // Gib das Produkt als Antwort zurück
     return NextResponse.json(product);
-
   } catch (error) {
     console.error("Error fetching product:", error);
     return NextResponse.json(
