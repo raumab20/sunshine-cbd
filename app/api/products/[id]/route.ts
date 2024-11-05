@@ -15,7 +15,7 @@ export async function GET(
     // Überprüfe, ob die ID eine gültige MongoDB ObjectId ist
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
-        { error: "Invalid product ID!" },
+        { error: "Invalid product ID" },
         { status: 400 }
       );
     }
