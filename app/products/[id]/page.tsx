@@ -64,7 +64,7 @@ export default async function ProductPage({
       });
 
       if (!res.ok) {
-        throw new Error("Fehler beim Hinzufügen zum Warenkorb");
+        throw new Error("Fehler beim Hinzufügen zum Warenkorb!");
       }
 
       const data = await res.json();
