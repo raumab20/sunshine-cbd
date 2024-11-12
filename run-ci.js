@@ -113,8 +113,11 @@ async function runCIPipeline() {
     console.error("❌❌❌ CI Pipeline failed:", error.message);
     process.kill(-serverProcess.pid);
   } finally {
-    rl.close();
-    console.log("✅✅✅ CI Pipeline successful.");
+    if(serverProcess) {
+      console.log("🛑 Stopping the server and its process group...");
+      process.kill(-serverProcess.pid, "SIGTERM"); // Kills the entire process group
+      console.log("Server and associated processes have been stopped.");
+    }
   }
 }
 

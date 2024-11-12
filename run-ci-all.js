@@ -1,30 +1,31 @@
-// run-ci-all.js
 import { execSync, spawn } from "child_process";
 
 async function runCIPipeline() {
   console.log("🌞 Running CI Pipeline...");
 
+  let serverProcess;
+  
   try {
-    // Schritt 1: Build-Prozess
+    // Step 1: Build process
     console.log("🏗️ Building the project...");
     execSync("npm run build", { stdio: "inherit" });
 
-    // Schritt 2: Entwicklungsserver im Hintergrund starten
+    // Step 2: Start development server in a new process group
     console.log("🔄 Starting the server...");
-    const serverProcess = spawn("npm", ["run", "dev"], {
+    serverProcess = spawn("npm", ["run", "dev"], {
       detached: true,
       stdio: "inherit",
     });
-    serverProcess.unref(); // Löst den Serverprozess vom Hauptprozess, sodass er weiterläuft
+    serverProcess.unref(); // Detach the server process from the main script
 
-    // Wartezeit, um sicherzustellen, dass der Server vollständig gestartet ist
+    // Wait to ensure the server starts completely
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // Schritt 3: Jest-Tests ausführen
+    // Step 3: Run Jest tests
     console.log("🧪 Running all Jest tests...");
     execSync("npm run test:jest", { stdio: "inherit" });
 
-    // Schritt 4: Cypress-Tests ausführen
+    // Step 4: Run Cypress tests
     console.log("🧪 Running all Cypress tests...");
     execSync("npm run test:cypress", { stdio: "inherit" });
 
@@ -32,9 +33,12 @@ async function runCIPipeline() {
   } catch (error) {
     console.error("❌❌❌ CI Pipeline failed:", error.message);
   } finally {
-    // Server nach Abschluss der Tests stoppen
-    console.log("🛑 Stopping the server...");
-    execSync("pkill -f 'npm run dev'"); // Stoppt alle Prozesse, die 'npm run dev' enthalten
+    // Stop the server and its entire process group
+    if (serverProcess) {
+      console.log("🛑 Stopping the server and its process group...");
+      process.kill(-serverProcess.pid, "SIGTERM"); // Kills the entire process group
+      console.log("Server and associated processes have been stopped.");
+    }
   }
 }
 
