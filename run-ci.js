@@ -8,11 +8,11 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-// Pfade zu Jest- und Cypress-Testordnern
-const jestTestDir = "./__tests__"; // Pfad für Jest-Tests
-const cypressTestDir = "./cypress/e2e"; // Pfad für Cypress-Tests
+// Paths to Jest and Cypress test directories
+const jestTestDir = "./__tests__";
+const cypressTestDir = "./cypress/e2e";
 
-// Alle Tests in einem Verzeichnis auflisten
+// Function to list all tests in a directory
 function listTests(dir) {
   try {
     return fs.readdirSync(dir).filter(file => file.endsWith(".tsx") || file.endsWith(".ts"));
@@ -31,23 +31,25 @@ function askQuestion(query) {
 async function runCIPipeline() {
   console.log("🌞 Running CI Pipeline...");
 
+  let serverProcess;
+
   try {
-    // Build-Prozess
+    // Build process
     console.log("🏗️ Building the project...");
     execSync("npm run build", { stdio: "inherit" });
 
-    // Server im Entwicklungsmodus im Hintergrund starten
+    // Start server in development mode in a new process group
     console.log("🔄 Starting the server...");
-    const serverProcess = spawn("npm", ["run", "dev"], {
-      detached: true, // Server vom Hauptprozess lösen
-      stdio: "inherit", // Ausgabe beibehalten
+    serverProcess = spawn("npm", ["run", "dev"], {
+      detached: true,
+      stdio: "inherit",
     });
-    serverProcess.unref(); // Server weiterlaufen lassen, wenn Hauptprozess endet
+    serverProcess.unref();
 
-    // Warten, damit der Server vollständig startet
+    // Wait for server to start fully
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // Test-Menü
+    // Test menu
     let running = true;
     while (running) {
       console.log("\n📜 Available Test Options:");
@@ -106,18 +108,18 @@ async function runCIPipeline() {
       }
     }
 
-    // Server nach Abschluss der Tests stoppen
-    process.kill(-serverProcess.pid);
+    console.log("✅✅✅ CI Pipeline successful.");
 
   } catch (error) {
     console.error("❌❌❌ CI Pipeline failed:", error.message);
-    process.kill(-serverProcess.pid);
   } finally {
-    if(serverProcess) {
+    // Stop the server and its process group
+    if (serverProcess) {
       console.log("🛑 Stopping the server and its process group...");
-      process.kill(-serverProcess.pid, "SIGTERM"); // Kills the entire process group
+      process.kill(-serverProcess.pid, "SIGTERM"); // Stops the entire process group
       console.log("Server and associated processes have been stopped.");
     }
+    rl.close();
   }
 }
 

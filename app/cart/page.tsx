@@ -17,7 +17,7 @@ const CartPage: NextPage = () => {
     }
 
     setLoading(true);
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL as string;
     const url = new URL(`${baseUrl}/api/cart`);
 
     try {
@@ -46,7 +46,7 @@ const CartPage: NextPage = () => {
   const deleteCartItem = async (cartItemId: string) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== cartItemId));
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL as string;
     const url = new URL(`${baseUrl}/api/cart/item`);
 
     try {
@@ -74,7 +74,7 @@ const CartPage: NextPage = () => {
       )
     );
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL as string;
     const url = new URL(`${baseUrl}/api/cart/item`);
 
     try {

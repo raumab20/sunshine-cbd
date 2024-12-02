@@ -31,7 +31,7 @@ export default function ProductPage() {
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL as string;
     const url = new URL(`${baseUrl}/api/products`);
 
     try {

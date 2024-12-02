@@ -21,7 +21,7 @@ interface Product {
 
 async function getProduct(id: string): Promise<Product | null> {
   try {
-    const res = await fetch(`http://localhost:3000/api/products/${id}`, {
+    const res = await fetch(`http://localhost:45620/api/products/${id}`, {
       cache: "no-store",
     });
     if (!res.ok) return null;
