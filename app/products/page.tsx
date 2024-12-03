@@ -31,7 +31,7 @@ export default function ProductPage() {
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL as string;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const url = new URL(`${baseUrl}/api/products`);
 
     try {
