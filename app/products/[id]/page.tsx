@@ -1,14 +1,13 @@
-// pages/products/[id].tsx
 "use client";
+import { useState, useEffect } from "react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Star, ShoppingCart, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
 import { useSession } from "next-auth/react";
-import RelatedProducts from "@/components/RelatedProducts"; // Import der RelatedProducts-Komponente
+import RelatedProducts from "@/components/RelatedProducts";
 
 interface Product {
   id: string;
@@ -21,31 +20,28 @@ interface Product {
   createdAt: string;
 }
 
-async function getProduct(id: string): Promise<Product | null> {
-  try {
-    const res = await fetch(`http://localhost:45620/api/products/${id}`, {
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (error) {
-    console.error("Error fetching product:", error);
-    return null;
-  }
-}
-
-export default async function ProductPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ProductPage({ params }: { params: { id: string } }) {
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const { data: session } = useSession();
-  const product = await getProduct(params.id);
 
-  if (!product) notFound();
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const res = await fetch(`http://localhost:45620/api/products/${params.id}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error("Produkt nicht gefunden.");
+        const data: Product = await res.json();
+        setProduct(data);
+      } catch (error) {
+        console.error("Fehler beim Abrufen des Produkts:", error);
+        notFound(); // Navigation zu einer Fehlerseite
+      }
+    };
 
-  const { name, image, price, category, description, stock } = product;
+    fetchProduct();
+  }, [params.id]);
 
   const addToCart = async () => {
     if (!session) {
@@ -60,14 +56,12 @@ export default async function ProductPage({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ session: session, productId: product.id }),
+        body: JSON.stringify({ session, productId: product?.id }),
       });
 
       if (!res.ok) {
         throw new Error("Fehler beim Hinzufügen zum Warenkorb");
       }
-
-      const data = await res.json();
     } catch (error) {
       console.error("Fehler beim Hinzufügen zum Warenkorb:", error);
       alert("Fehler beim Hinzufügen zum Warenkorb. Bitte versuchen Sie es später erneut.");
@@ -75,6 +69,10 @@ export default async function ProductPage({
       setLoading(false);
     }
   };
+
+  if (!product) return <div>Loading...</div>;
+
+  const { name, image, price, category, description, stock } = product;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -136,8 +134,7 @@ export default async function ProductPage({
         </div>
       </div>
 
-      {/* Einbindung der RelatedProducts-Komponente */}
-      <RelatedProducts category={category} id={params.id}/>
+      <RelatedProducts category={category} id={params.id} />
     </div>
   );
 }

@@ -27,7 +27,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, id }) => {
   const [loading, setLoading] = useState(true);
   const [canScroll, setCanScroll] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const scrollAmount = 300; // Pixel, um die gescrollt wird
+  const scrollAmount = 300;
 
   useEffect(() => {
     const fetchRelatedProducts = async () => {
