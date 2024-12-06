@@ -1,6 +1,7 @@
 "use client";
+
 import { useState, useEffect } from "react";
-import { notFound } from "next/navigation";
+import { notFound, useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import { Star, ShoppingCart, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -20,15 +21,21 @@ interface Product {
   createdAt: string;
 }
 
-export default function ProductPage({ params }: { params: { id: string } }) {
+export default function ProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const { data: session } = useSession();
+  const router = useRouter();
+  const { id } = useParams(); // Dynamische Route auslesen
 
   useEffect(() => {
+    if (!id) return; // Warten, bis die Route geladen ist
+
     const fetchProduct = async () => {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+
       try {
-        const res = await fetch(`http://localhost:45620/api/products/${params.id}`, {
+        const res = await fetch(`${baseUrl}/api/products/${id}`, {
           cache: "no-store",
         });
         if (!res.ok) throw new Error("Produkt nicht gefunden.");
@@ -36,12 +43,12 @@ export default function ProductPage({ params }: { params: { id: string } }) {
         setProduct(data);
       } catch (error) {
         console.error("Fehler beim Abrufen des Produkts:", error);
-        notFound(); // Navigation zu einer Fehlerseite
+        notFound(); // Navigiert zur Fehlerseite
       }
     };
 
     fetchProduct();
-  }, [params.id]);
+  }, [id]);
 
   const addToCart = async () => {
     if (!session) {
@@ -134,7 +141,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <RelatedProducts category={category} id={params.id} />
+      <RelatedProducts category={category} id={id as string} />
     </div>
   );
 }

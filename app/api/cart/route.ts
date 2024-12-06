@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const prisma = new PrismaClient();
 
-async function getUser(session: any) {
+async function getUser(session: { user?: { email?: string } }) {
   if (!session || !session.user || !session.user.email) {
     return null;
   }

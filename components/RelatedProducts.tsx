@@ -31,11 +31,11 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, id }) => {
 
   useEffect(() => {
     const fetchRelatedProducts = async () => {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+
       try {
         let res = await fetch(
-          `http://localhost:45620/api/products?category=${encodeURIComponent(
-            category
-          )}`
+          `${baseUrl}/api/products?category=${encodeURIComponent(category)}`
         );
 
         if (!res.ok) throw new Error("Fehler beim Abrufen der verwandten Produkte.");
@@ -43,14 +43,15 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, id }) => {
         let data: Product[] = await res.json();
 
         if (data.length <= 1) {
-          res = await fetch(`http://localhost:45620/api/products`);
+          res = await fetch(`${baseUrl}/api/products`);
           if (!res.ok) throw new Error("Fehler beim Abrufen der Produkte.");
           data = await res.json();
         }
 
         data = data.filter((product) => product.id !== id);
 
-        setProducts(data);
+        // Begrenzen auf die ersten 10 Produkte
+        setProducts(data.slice(0, 10));
       } catch (error) {
         console.error(error);
       } finally {

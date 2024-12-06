@@ -2,12 +2,10 @@
 import React, { useState } from "react";
 import AuthButton from "@/components/AuthButton";
 import { loginWithCreds } from "@/actions/auth";
-import { useRouter } from "next/navigation";
 
 const LoginForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false); // Hinzufügen des loading-Zustands
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

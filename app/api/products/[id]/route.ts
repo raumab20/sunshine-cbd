@@ -4,13 +4,10 @@ import { ObjectId } from "mongodb"; // Importiere ObjectId
 
 const prisma = new PrismaClient();
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, context: { params: { id: string } }) {
   try {
-    // Extrahiere die Produkt-ID aus den params
-    const { id } = params;
+    // Hole die params asynchron aus dem context
+    const { id } = await context.params;
 
     // Überprüfe, ob die ID eine gültige MongoDB ObjectId ist
     if (!ObjectId.isValid(id)) {

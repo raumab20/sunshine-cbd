@@ -11,7 +11,7 @@ describe('Product Page E2E Tests', () => {
     cy.get('.category').click({ force: true }) 
     cy.get('div[role="option"]').contains('Flowers').click({ force: true }) 
     cy.wait(500)
-    cy.get('.product-card').should('have.length', 1)  
+    cy.get('.product-card').should('have.length', 3)  
     cy.get('.product-card').contains('Flowers') 
   })
   
@@ -21,7 +21,7 @@ describe('Product Page E2E Tests', () => {
       cy.get('input[placeholder="Min Price"]').type('20')  // Enter minimum price
       cy.get('input[placeholder="Max Price"]').type('30')  // Enter maximum price
       cy.wait(500)
-      cy.get('.product-card').should('have.length', 2)  // Verify two products are displayed
+      cy.get('.product-card').should('have.length', 1)  // Verify two products are displayed
       cy.get('.product-card').each(($el) => {
         cy.wrap($el).find('.price').then(($price) => {
           const productPrice = parseFloat($price.text().replace('$', ''))

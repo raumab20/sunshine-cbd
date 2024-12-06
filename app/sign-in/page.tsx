@@ -10,7 +10,7 @@ const SignIn = () => {
         <h1 className="text-3xl w-full text-center font-bold mb-6">Sign in</h1>
         <LoginForm />
         <p className="mt-4">
-          Don't have an account?{" "}
+        <p>Don&apos;t have an account?</p>{" "}
           <Link href="/register" className="underline">
             Click here to register
           </Link>

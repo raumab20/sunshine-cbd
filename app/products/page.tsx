@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Product } from "../types/Product";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,8 +17,11 @@ import ProductCard from "@/components/ProductCard";
 import Link from "next/link";
 
 export default function ProductPage() {
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  // Zustandsvariablen
+  const [allProducts, setAllProducts] = useState<Product[]>([]); // Alle Produkte
+  const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]); // Nach Filter ausgewählt
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]); // Nach Suchanfrage gefiltert
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [category, setCategory] = useState("all");
@@ -26,83 +29,90 @@ export default function ProductPage() {
   const [maxPrice, setMaxPrice] = useState("");
   const [sort, setSort] = useState("name_asc");
   const [searchQuery, setSearchQuery] = useState("");
-  const [fetchedProducts, setFetchedProducts] = useState<Product[]>([]);
 
-  const fetchProducts = async () => {
+  // Produkte abrufen
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    const url = new URL(`${baseUrl}/api/products`);
 
     try {
-      const res = await fetch(`${baseUrl}/api/products`);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch products: ${res.status}`);
-      }
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`);
+      if (!res.ok) throw new Error("Failed to fetch products");
+
       const data = await res.json();
-      setFetchedProducts(data);
+      setAllProducts(data); // Setze alle Produkte
+      setDisplayedProducts(data); // Anfangs zeigt displayedProducts alle Produkte
+      setFilteredProducts(data); // Anfangs keine Filterung
     } catch (error) {
       console.error("Error fetching products:", error);
       setError("Failed to fetch products. Please try again later.");
     } finally {
       setLoading(false);
     }
-
-    if (category && category !== "all")
-      url.searchParams.append("category", category);
-    if (minPrice) url.searchParams.append("minPrice", minPrice);
-    if (maxPrice) url.searchParams.append("maxPrice", maxPrice);
-    if (sort) {
-      const [sortBy, sortOrder] = sort.split("_");
-      url.searchParams.append("sortBy", sortBy);
-      url.searchParams.append("sortOrder", sortOrder);
-    }
-
-    try {
-      const res = await fetch(url.toString());
-      if (!res.ok) {
-        throw new Error(`Failed to fetch products: ${res.status}`);
-      }
-
-      const data = await res.json();
-      console.log("Fetched products:", data);
-      setAllProducts(data);
-      setFilteredProducts(data);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      setError("Failed to fetch products. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const debouncedFetchProducts = useMemo(
-    () => debounce(fetchProducts, 300),
-    [category, minPrice, maxPrice, sort]
-  );
+  }, []);
 
   useEffect(() => {
-    debouncedFetchProducts();
-    return () => debouncedFetchProducts.cancel();
-  }, [debouncedFetchProducts]);
+    fetchProducts();
+  }, [fetchProducts]);
 
-  const filterProducts = useMemo(() => {
-    return debounce((query: string) => {
-      const lowercaseQuery = query.toLowerCase();
-      const filtered = allProducts.filter(
+  // Produkte basierend auf Kategorie, Preis und Sortierung filtern
+  useEffect(() => {
+    let updatedProducts = [...allProducts];
+
+    if (category !== "all") {
+      updatedProducts = updatedProducts.filter(
+        (product) => product.category === category
+      );
+    }
+
+    if (minPrice) {
+      updatedProducts = updatedProducts.filter(
+        (product) => product.price >= parseFloat(minPrice)
+      );
+    }
+
+    if (maxPrice) {
+      updatedProducts = updatedProducts.filter(
+        (product) => product.price <= parseFloat(maxPrice)
+      );
+    }
+
+    if (sort) {
+      const [sortBy, sortOrder] = sort.split("_");
+      updatedProducts.sort((a, b) => {
+        if (sortBy === "price") {
+          return sortOrder === "asc"
+            ? a.price - b.price
+            : b.price - a.price;
+        }
+        if (sortBy === "name") {
+          return sortOrder === "asc"
+            ? a.name.localeCompare(b.name)
+            : b.name.localeCompare(a.name);
+        }
+        return 0;
+      });
+    }
+
+    setDisplayedProducts(updatedProducts);
+    setFilteredProducts(updatedProducts); // Initialisiere gefilterte Produkte gleich
+  }, [category, minPrice, maxPrice, sort, allProducts]);
+
+  // Produkte basierend auf der Suchanfrage filtern
+  useEffect(() => {
+    const debouncedFilter = debounce(() => {
+      const lowerQuery = searchQuery.toLowerCase();
+      const filtered = displayedProducts.filter(
         (product) =>
-          product.name.toLowerCase().includes(lowercaseQuery) ||
-          product.description?.toLowerCase().includes(lowercaseQuery) ||
-          product.category.toLowerCase().includes(lowercaseQuery)
+          product.name.toLowerCase().includes(lowerQuery) ||
+          product.description?.toLowerCase().includes(lowerQuery)
       );
       setFilteredProducts(filtered);
     }, 300);
-  }, [allProducts]);
 
-  useEffect(() => {
-    filterProducts(searchQuery);
-    return () => filterProducts.cancel();
-  }, [searchQuery, filterProducts]);
+    debouncedFilter();
+    return () => debouncedFilter.cancel();
+  }, [searchQuery, displayedProducts]);
 
   if (error) {
     return (
@@ -151,9 +161,11 @@ export default function ProductPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700 text-yellow-100">
                   <SelectItem value="all">All Categories</SelectItem>
-                  {fetchedProducts.map((product) => (
-                    <SelectItem key={product.id} value={product.category}>
-                      {product.category}
+                  {Array.from(
+                    new Set(allProducts.map((product) => product.category))
+                  ).map((cat, index) => (
+                    <SelectItem key={index} value={cat}>
+                      {cat}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -3,6 +3,8 @@ import { NextPage } from "next";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useCallback } from "react";
+import Image from "next/image";
 
 const CartPage: NextPage = () => {
   const [cart, setCart] = useState<any[]>([]);
@@ -10,16 +12,16 @@ const CartPage: NextPage = () => {
 
   const { data: session, status } = useSession();
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     if (!session) {
       setLoading(false);
       return;
     }
-
+  
     setLoading(true);
     const baseUrl = process.env.NEXT_PUBLIC_API_URL as string;
     const url = new URL(`${baseUrl}/api/cart`);
-
+  
     try {
       const res = await fetch(url.toString(), {
         method: "POST",
@@ -28,11 +30,11 @@ const CartPage: NextPage = () => {
         },
         body: JSON.stringify({ session }),
       });
-
+  
       if (!res.ok) {
         throw new Error(`Failed to fetch cart: ${res.status}`);
       }
-
+  
       const data = await res.json();
       setCart(data);
     } catch (error) {
@@ -41,7 +43,13 @@ const CartPage: NextPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session]);
+  
+  useEffect(() => {
+    if (session && status === "authenticated") {
+      fetchCart();
+    }
+  }, [session, status, fetchCart]);
 
   const deleteCartItem = async (cartItemId: string) => {
     setCart((prevCart) => prevCart.filter((item) => item.id !== cartItemId));
@@ -95,12 +103,6 @@ const CartPage: NextPage = () => {
     }
   };
 
-  useEffect(() => {
-    if (session && status === "authenticated") {
-      fetchCart();
-    }
-  }, [session, status]);
-
   if (loading) {
     return (
       <div className="text-center py-6 text-gray-200">Loading Cart...</div>
@@ -123,7 +125,13 @@ const CartPage: NextPage = () => {
 
   const calculateTotalPrice = () => {
     return cart
-      .reduce((total, item) => total + item.product.price * item.quantity, 0)
+      .reduce((total, item) => {
+        if (!item.product) {
+          console.warn("Missing product data for item:", item);
+          return total;
+        }
+        return total + item.product.price * item.quantity;
+      }, 0)
       .toFixed(2);
   };
 
@@ -133,15 +141,24 @@ const CartPage: NextPage = () => {
         Cart
       </h1>
       <ul className="space-y-4">
-        {cart.map((item) => (
+
+      {cart.map((item) => {
+        if (!item.product) {
+          console.warn("Item with missing product data:", item);
+          return null;
+        }
+
+        return (
           <li
             key={item.id}
             className="flex items-center justify-between border-b border-gray-700 pb-4"
           >
-            <img
+            <Image
               src={item.product.image}
               alt={item.product.name}
-              className="w-16 h-16 rounded-md"
+              width={64} // Adjust as needed
+              height={64} // Adjust as needed
+              className="rounded-md"
             />
             <div className="flex-1 ml-4">
               <h2 className="text-lg font-semibold text-gray-100">
@@ -159,9 +176,7 @@ const CartPage: NextPage = () => {
               >
                 -
               </button>
-              <span className="px-3 text-lg text-gray-100">
-                {item.quantity}
-              </span>
+              <span className="px-3 text-lg text-gray-100">{item.quantity}</span>
               <button
                 onClick={() => updateQuantity(item.id, item.quantity + 1)}
                 className="px-2 py-1 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
@@ -179,7 +194,9 @@ const CartPage: NextPage = () => {
               Delete
             </button>
           </li>
-        ))}
+        );
+      })}
+
       </ul>
       <div className="flex items-center justify-between mt-8 border-t border-gray-700 pt-4">
         <Link
