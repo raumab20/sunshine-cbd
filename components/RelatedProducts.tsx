@@ -112,7 +112,8 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, id }) => {
       <div className="relative">
         <div
           ref={scrollContainerRef}
-          className="flex overflow-x-auto scrollbar-hide"
+          className="flex overflow-x-auto scrollbar-hide relatedProducts"
+          data-testid="related-products"
         >
           {products.map((product) => (
             <Link key={product.id} href={`/products/${product.id}`}>

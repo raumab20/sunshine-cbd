@@ -8,7 +8,7 @@
     "postinstall": "prisma generate",
     "seed": "ts-node --esm prisma/seed.js",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 45620",
     "lint": "next lint",
     "test": "jest",
     "ci": "node run-ci.js",
