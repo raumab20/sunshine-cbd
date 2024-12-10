@@ -72,4 +72,6 @@ export const {
     error: "/auth/error",
   },
   debug: process.env.NODE_ENV === "development",
+  secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true, // Erlaubt Anfragen von jedem Host
 });
