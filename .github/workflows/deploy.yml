@@ -1,0 +1,32 @@
+name: Auto-Deploy to Uberspace
+
+on:
+  push:
+    branches:
+      - dev  # Wird bei jedem Push auf den dev-Branch ausgeführt
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Deploy to Uberspace via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: horologium.uberspace.de
+          username: kasunshi
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/html/sunshine-cbd
+            echo ">>> Pulling latest code..."
+            git pull origin dev
+            echo ">>> Installing dependencies..."
+            npm install --production
+            echo ">>> Building project..."
+            npm run build
+            echo ">>> Restarting server..."
+            pm2 restart sunshine-cbd || pm2 start npm --name "sunshine-cbd" -- start
+            echo ">>> Deployment complete!"
