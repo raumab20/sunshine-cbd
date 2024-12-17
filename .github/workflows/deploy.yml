@@ -1,9 +1,9 @@
-name: Auto-Deploy to Uberspace
+name: Deploy to Uberspace
 
 on:
   push:
     branches:
-      - dev  # Wird bei jedem Push auf den dev-Branch ausgeführt
+      - dev
 
 jobs:
   deploy:
@@ -23,10 +23,15 @@ jobs:
             cd ~/html/sunshine-cbd
             echo ">>> Pulling latest code..."
             git pull origin dev
+            
             echo ">>> Installing dependencies..."
-            npm install --production
-            echo ">>> Building project..."
-            npm run build
-            echo ">>> Restarting server..."
-            pm2 restart sunshine-cbd || pm2 start npm --name "sunshine-cbd" -- start
+            npm install
+            
+            echo ">>> Building the project..."
+            NODE_OPTIONS="--max-old-space-size=512" npm run build
+            
+            echo ">>> Restarting PM2 process..."
+            pm2 delete all
+            pm2 start "npm start" --name sunshine-cbd
+            
             echo ">>> Deployment complete!"
