@@ -85,7 +85,7 @@ export default function ProductPage() {
     <div className="container mx-auto px-4 py-8">
       <Link
         href="/products"
-        className="inline-flex items-center text-sm font-medium text-primary hover:underline mb-4"
+        className="inline-flex items-center text-sm font-medium text-secondary hover:underline mb-4"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Zurück zu den Produkten
