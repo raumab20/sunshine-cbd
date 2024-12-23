@@ -2,6 +2,7 @@ describe('Product Page E2E Tests', () => {
   // Test 1: Verify the product page loads correctly
   it('should load the product page', () => {
     cy.visit('/products');
+    cy.wait(3000);  // Warte nach dem Laden der Seite
     cy.get('h1', { timeout: 5000 }).contains('Our Products');
   });
 
@@ -10,6 +11,7 @@ describe('Product Page E2E Tests', () => {
     cy.visit('/products');
     cy.get('.category', { timeout: 5000 }).click({ force: true });
     cy.get('div[role="option"]', { timeout: 5000 }).contains('Flowers').click({ force: true });
+    cy.wait(3000); // Warte nach dem Filterklick
     cy.get('.product-card', { timeout: 5000 }).should('have.length', 3);
     cy.get('.product-card').contains('Flowers');
   });
@@ -19,6 +21,7 @@ describe('Product Page E2E Tests', () => {
     cy.visit('/products');
     cy.get('input[placeholder="Min Price"]', { timeout: 5000 }).type('20');
     cy.get('input[placeholder="Max Price"]', { timeout: 5000 }).type('30');
+    cy.wait(3000); // Warte nach der Eingabe der Preise
     cy.get('.product-card', { timeout: 5000 }).should('have.length', 1);
     cy.get('.product-card').each(($el) => {
       cy.wrap($el).find('.price').then(($price) => {
@@ -33,6 +36,7 @@ describe('Product Page E2E Tests', () => {
     cy.visit('/products');
     cy.get('button[data-testid="sort-select"]', { timeout: 5000 }).click({ force: true });
     cy.get('div[role="option"]', { timeout: 5000 }).contains('Price (Low to High)').click({ force: true });
+    cy.wait(3000); // Warte nach dem Sortieren
     cy.get('.product-card .price', { timeout: 5000 }).then(($prices) => {
       const priceValues = [...$prices].map((price) => parseFloat(price.innerText.replace('$', '')));
       const sorted = [...priceValues].sort((a, b) => a - b);
@@ -45,6 +49,7 @@ describe('Product Page E2E Tests', () => {
     cy.visit('/products');
     cy.get('button[data-testid="sort-select"]', { timeout: 5000 }).click({ force: true });
     cy.get('div[role="option"]', { timeout: 5000 }).contains('Price (High to Low)').click({ force: true });
+    cy.wait(3000); // Warte nach dem Sortieren
     cy.get('.product-card .price', { timeout: 5000 }).then(($prices) => {
       const priceValues = [...$prices].map((price) => parseFloat(price.innerText.replace('$', '')));
       const sorted = [...priceValues].sort((a, b) => b - a);
