@@ -49,9 +49,7 @@ jobs:
 
       # Start Next.js Server
       - name: Start Next.js server
-        run: npm run start &
-        env:
-          NEXT_PUBLIC_ENV: test
+        run: npm run dev
 
       # Warte, bis der Server bereit ist
       - name: Wait for Next.js server to be ready
