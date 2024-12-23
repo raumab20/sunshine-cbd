@@ -21,6 +21,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/html/sunshine-cbd
+            echo ">>> Changed to directory:"
+            pwd
+
             echo ">>> Pulling latest code..."
             git pull origin dev
             
@@ -28,7 +31,12 @@ jobs:
             npm install
             
             echo ">>> Building the project..."
-            NODE_OPTIONS="--max-old-space-size=512" npm run build
+            # Wiederhole den Build-Prozess, falls er fehlschlägt
+            until NODE_OPTIONS="--max-old-space-size=512" npm run build --verbose; do
+              echo "Build failed, retrying in 5 seconds..."
+
+              sleep 5
+            done
             
             echo ">>> Restarting PM2 process..."
             pm2 delete all
