@@ -48,12 +48,12 @@ jobs:
         run: npm run build
 
       # Start Next.js Server
-      - name: Start Next.js server
-        run: npm run dev
+      - name: Start Next.js server in background
+        run: npm run dev &
 
       # Warte, bis der Server bereit ist
       - name: Wait for Next.js server to be ready
-        run: npx wait-on http://localhost:45620
+        run: npx wait-on http://localhost:45620 --timeout 60000
 
       # Cypress-Tests im Headless-Modus
       - name: Run Cypress tests in headless mode
