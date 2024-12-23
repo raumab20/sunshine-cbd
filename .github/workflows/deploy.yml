@@ -20,6 +20,8 @@ jobs:
           username: kasunshi
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo ">>> Adding ~/bin to PATH..."
+            export PATH=$PATH:~/bin
             cd ~/html/sunshine-cbd
             echo ">>> Changed to directory:"
             pwd
