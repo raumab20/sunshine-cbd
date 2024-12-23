@@ -59,7 +59,9 @@ jobs:
 
       # Cypress-Tests im Headless-Modus
       - name: Run Cypress tests in headless mode
-        run: npx cypress run
+        run: |
+          export DEBUG=cypress:*
+          npx cypress run --browser chrome
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }} # Optional für Cypress Dashboard
 

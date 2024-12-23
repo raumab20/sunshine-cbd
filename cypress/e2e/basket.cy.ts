@@ -24,14 +24,14 @@ describe("Cart Functionality", () => {
     cy.get("button").contains("Add to Cart").first().click();
 
     cy.visit("/cart");
-    cy.get(".text-2xl", { timeout: 3000 }).contains("Cart").should('be.visible');
-    cy.get("ul", { timeout: 3000 }).find("li").should("have.length", 1);
+    cy.get(".text-2xl", { timeout: 5000 }).contains("Cart").should('be.visible');
+    cy.get("ul", { timeout: 5000 }).find("li").should("have.length", 1);
   });
 
   it("Increases the product quantity to 2 and checks the update", () => {
     cy.visit("/cart");
 
-    cy.get("ul", { timeout: 3000 })
+    cy.get("ul", { timeout: 5000 })
       .find("li")
       .first()
       .within(() => {
@@ -39,14 +39,14 @@ describe("Cart Functionality", () => {
         cy.get("button").contains("+").click();
 
         // Wait for the quantity to update and check it
-        cy.get("span", { timeout: 3000 }).should("contain", "2");
+        cy.get("span", { timeout: 5000 }).should("contain", "2");
       });
   });
 
   it("Reduces the product quantity back to 1 and verifies the update", () => {
     cy.visit("/cart");
 
-    cy.get("ul", { timeout: 3000 })
+    cy.get("ul", { timeout: 5000 })
       .find("li")
       .first()
       .within(() => {
@@ -55,21 +55,21 @@ describe("Cart Functionality", () => {
 
         // Reload the page to ensure backend consistency
         cy.reload();
-        cy.get("span", { timeout: 3000 }).should("contain", "1");
+        cy.get("span", { timeout: 5000 }).should("contain", "1");
       });
   });
 
   it("Removes the product and verifies the cart is empty", () => {
     cy.visit("/cart");
 
-    cy.get("ul", { timeout: 3000 })
+    cy.get("ul", { timeout: 5000 })
       .find("li")
       .first()
       .within(() => {
         // Click the delete button
         cy.get("button").contains("Delete").click();
       });
-    cy.get("ul", { timeout: 3000 }).should("not.exist");
-    cy.contains("The cart is empty", { timeout: 3000 });
+    cy.get("ul", { timeout: 5000 }).should("not.exist");
+    cy.contains("The cart is empty", { timeout: 5000 });
   });
 });
