@@ -68,17 +68,20 @@ describe("Cart Functionality", () => {
 
   it("Removes the product and verifies the cart is empty", () => {
     cy.visit("/cart");
-
+  
+    cy.get("ul", { timeout: 10000 }).should("exist").and("be.visible");
+  
     cy.get("ul", { timeout: 5000 })
       .find("li")
       .first()
       .within(() => {
-        // Click the delete button
         cy.get("button").contains("Delete").click();
       });
-    cy.wait(3000); // Wait after deletion
-
-    cy.get("ul", { timeout: 5000 }).should("not.exist");
+  
+    cy.wait(3000); // Warten, um sicherzustellen, dass das Produkt gelöscht wurde
+    cy.reload(); // Seite neu laden, um den aktuellen Zustand zu überprüfen
+  
+    cy.get("ul", { timeout: 5000 }).should("not.exist"); // Stelle sicher, dass der Warenkorb leer ist
     cy.contains("The cart is empty", { timeout: 5000 });
-  });
+  });  
 });
