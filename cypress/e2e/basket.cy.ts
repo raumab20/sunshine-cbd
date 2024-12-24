@@ -22,7 +22,7 @@ describe("Cart Functionality", () => {
     cy.visit("/products");
 
     cy.get("button").contains("Add to Cart").first().click();
-    cy.wait(3000); // Warte für 3 Sekunden, um sicherzustellen, dass die Seite geladen ist
+    cy.wait(3000); // Wait for 3 seconds to ensure the page loads
 
     cy.visit("/cart");
     cy.get(".text-2xl", { timeout: 5000 }).contains("Cart").should('be.visible');
@@ -38,7 +38,7 @@ describe("Cart Functionality", () => {
       .within(() => {
         // Click the increase button
         cy.get("button").contains("+").click();
-        cy.wait(3000); // Warte nach dem Klick
+        cy.wait(3000); // Wait after the click
 
         // Wait for the quantity to update and check it
         cy.get("span", { timeout: 5000 }).should("contain", "2");
@@ -54,11 +54,11 @@ describe("Cart Functionality", () => {
       .within(() => {
         // Click the decrease button
         cy.get("button").contains("-").click();
-        cy.wait(3000); // Warte nach dem Klick
+        cy.wait(3000); // Wait after the click
 
         // Reload the page to ensure backend consistency
         cy.reload();
-        cy.wait(3000); // Warte nach dem Reload
+        cy.wait(3000); // Wait after reload
 
         // Wait for the quantity to update and check it
         cy.get("span", { timeout: 5000 }).should("contain", "1");
@@ -75,7 +75,7 @@ describe("Cart Functionality", () => {
         // Click the delete button
         cy.get("button").contains("Delete").click();
       });
-    cy.wait(3000); // Warte nach dem Löschen
+    cy.wait(3000); // Wait after deletion
 
     cy.get("ul", { timeout: 5000 }).should("not.exist");
     cy.contains("The cart is empty", { timeout: 5000 });
