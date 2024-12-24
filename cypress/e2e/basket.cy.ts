@@ -8,7 +8,8 @@ describe("Cart Functionality", () => {
 
     cy.session("user-session", () => {
       cy.visit("/sign-in");
-      cy.get('input[name="email"]').type("a1@gmail.com");
+      cy.wait(3000);
+      cy.get('input[name="email"]').should('be.enabled').type("a1@gmail.com");
       cy.get('input[name="password"]').type("a1@gmail.com");
       cy.get('button[type="submit"]').click();
 
