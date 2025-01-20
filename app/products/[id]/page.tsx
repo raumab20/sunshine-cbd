@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "next-auth/react";
 import RelatedProducts from "@/components/RelatedProducts";
+import DescriptionComponent from "@/components/DescriptionComponent";
 
 interface Product {
   id: string;
@@ -82,7 +83,8 @@ export default function ProductPage() {
   const { name, image, price, category, description, stock } = product;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div>
+      <div className="container mx-auto px-4 py-8">
       <Link
         href="/products"
         className="inline-flex items-center text-sm font-medium text-secondary hover:underline mb-4"
@@ -140,8 +142,9 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
-
       <RelatedProducts category={category} id={id as string} />
+    </div>
+    <DescriptionComponent title="CBD: Nature's Calming Compound" description={"Discover the potential of Cannabidiol (CBD), a non-psychoactive compound found in cannabis. Known for its calming effects, CBD may help reduce anxiety, alleviate pain, and promote overall wellness."} />
     </div>
   );
 }
