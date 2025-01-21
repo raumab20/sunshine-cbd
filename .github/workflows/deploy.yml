@@ -28,6 +28,10 @@ jobs:
 
             echo ">>> Pulling latest code..."
             git pull origin dev
+
+            echo ">>> Stop the application..."
+            pm2 stop all
+            pm2 delete all
             
             echo ">>> Installing dependencies..."
             npm install
@@ -41,7 +45,6 @@ jobs:
             done
             
             echo ">>> Restarting PM2 process..."
-            pm2 delete all
             pm2 start "npm start" --name sunshine-cbd
             
             echo ">>> Deployment complete!"

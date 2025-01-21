@@ -32,7 +32,7 @@ export default function Footer() {
           </li>
           <li>
             <a
-              href="/agb"
+              href="/agbs"
               className="text-gray-400 hover:text-white transition-colors"
             >
               AGBs
