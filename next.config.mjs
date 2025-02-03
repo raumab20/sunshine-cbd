@@ -11,6 +11,10 @@ const nextConfig = {
     // Ignoriert TypeScript-Fehler während des Builds
     ignoreBuildErrors: true,
   },
+  experimental: {
+    workerThreads: false, // Reduziert RAM-Verbrauch
+    concurrentFeatures: false, // Verhindert zu viele parallele Prozesse
+  },
 };
 
 export default nextConfig;

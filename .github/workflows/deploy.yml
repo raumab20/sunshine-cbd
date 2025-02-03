@@ -21,6 +21,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             #!/bin/bash
+            set -e
+
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
 
@@ -28,82 +30,55 @@ jobs:
             TEMP_DIR=~/html/sunshine-cbd_temp
             BACKUP_DIR=~/html/sunshine-cbd_backup
 
-            echo ">>> Stoppe die aktuell laufende Produktion (PM2)..."
+            echo ">>> Stopping current production (PM2)..."
             pm2 stop all || true
             pm2 delete all || true
 
-            echo ">>> Erstelle temporäres Verzeichnis..."
+            echo ">>> Creating temporary directory..."
             rm -rf $TEMP_DIR
             mkdir -p $TEMP_DIR
 
-            echo ">>> Synchronisiere aktuellen Produktionsstand in TEMP_DIR..."
+            echo ">>> Syncing current production state to TEMP_DIR..."
             rsync -a --delete $PROD_DIR/ $TEMP_DIR/
 
-            echo ">>> Aktualisiere Code in TEMP_DIR (git pull)..."
+            echo ">>> Updating code in TEMP_DIR..."
             cd $TEMP_DIR
             git pull origin dev
 
-            echo ">>> Installing dependencies in TEMP_DIR..."
+            echo ">>> Installing dependencies..."
             npm install
 
             echo ">>> Running tests in TEMP_DIR with memory limit..."
-            TEST_EXIT=0
-            if ! NODE_OPTIONS="--max-old-space-size=1024" npm run ci:all; then
-              TEST_EXIT=1
+            export NODE_OPTIONS="--max-old-space-size=1024"
+            if ! npm run ci:all; then
               echo ">>> Tests failed in TEMP_DIR!"
-            else
-              echo ">>> Tests passed in TEMP_DIR."
-            fi
-
-            if [ $TEST_EXIT -ne 0 ]; then
-              echo ">>> Cleaning up TEMP_DIR and restarting production with existing version..."
+              echo ">>> Cleaning up TEMP_DIR and restarting production..."
+              rm -rf $TEMP_DIR
               cd $PROD_DIR
               pm2 start "npm start" --name sunshine-cbd
-              rm -rf $TEMP_DIR
               exit 1
             fi
 
-            echo ">>> Building the project in TEMP_DIR with memory limit..."
-            BUILD_SUCCESS=1
-            while [ $BUILD_SUCCESS -ne 0 ]; do
-              echo ">>> Clearing Next.js cache..."
-              rm -rf .next
-              NODE_OPTIONS="--max-old-space-size=1024" NEXT_DISABLE_CACHE=1 npm run build --verbose
-              BUILD_SUCCESS=$?
-              if [ $BUILD_SUCCESS -ne 0 ]; then
-                echo "Build failed in TEMP_DIR, retrying in 5 seconds..."
-                sleep 5
+            echo ">>> Clearing Next.js cache..."
+            rm -rf .next
+
+            echo ">>> Building the project with retry on failure..."
+            while true; do
+              NODE_OPTIONS="--max-old-space-size=1024" TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build --no-lint --no-check
+              if [ $? -eq 0 ]; then
+                echo "✅ Build successful!"
+                break
               fi
+              echo "❌ Build failed, retrying in 5 seconds..."
+              sleep 5
             done
 
-            echo ">>> Creating backup of current production..."
-            rm -rf $BACKUP_DIR
-            cp -R $PROD_DIR $BACKUP_DIR
-
-            echo ">>> Deploying new version from TEMP_DIR to PROD_DIR..."
-            rsync -av --delete $TEMP_DIR/ $PROD_DIR/
-
-            echo ">>> Installing dependencies in PROD_DIR..."
-            cd $PROD_DIR
-            npm install
-
-            echo ">>> Building production version in PROD_DIR with memory limit..."
-            BUILD_SUCCESS=1
-            while [ $BUILD_SUCCESS -ne 0 ]; do
-              echo ">>> Clearing Next.js cache..."
-              rm -rf .next
-              NODE_OPTIONS="--max-old-space-size=1024" NEXT_DISABLE_CACHE=1 npm run build --verbose
-              BUILD_SUCCESS=$?
-              if [ $BUILD_SUCCESS -ne 0 ]; then
-                echo "Production build failed, retrying in 5 seconds..."
-                sleep 5
-              fi
-            done
+            echo ">>> Deployment successful! Swapping to production..."
+            rm -rf $PROD_DIR
+            mv $TEMP_DIR $PROD_DIR
 
             echo ">>> Restarting PM2 process..."
+            cd $PROD_DIR
             pm2 start "npm start" --name sunshine-cbd
-
-            echo ">>> Cleaning up: Deleting TEMP_DIR..."
-            rm -rf $TEMP_DIR
 
             echo ">>> Deployment complete!"
