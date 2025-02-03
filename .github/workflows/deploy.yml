@@ -21,20 +21,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             #!/bin/bash
-            # Keine set -e, damit wir Fehler manuell behandeln können
-
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
 
-            # Verzeichnisdefinitionen
             PROD_DIR=~/html/sunshine-cbd
             TEMP_DIR=~/html/sunshine-cbd_temp
             BACKUP_DIR=~/html/sunshine-cbd_backup
-
-            # Wechsel in das Produktionsverzeichnis (nur zur Anzeige)
-            cd $PROD_DIR
-            echo ">>> Changed to directory:" 
-            pwd
 
             echo ">>> Stoppe die aktuell laufende Produktion (PM2)..."
             pm2 stop all || true
@@ -72,9 +64,16 @@ jobs:
             fi
 
             echo ">>> Building the project in TEMP_DIR with memory limit..."
-            until NODE_OPTIONS="--max-old-space-size=1024" npm run build --verbose; do
-              echo "Build failed in TEMP_DIR, retrying in 5 seconds..."
-              sleep 5
+            BUILD_SUCCESS=1
+            while [ $BUILD_SUCCESS -ne 0 ]; do
+              echo ">>> Clearing Next.js cache..."
+              rm -rf .next
+              NODE_OPTIONS="--max-old-space-size=1024" NEXT_DISABLE_CACHE=1 npm run build --verbose
+              BUILD_SUCCESS=$?
+              if [ $BUILD_SUCCESS -ne 0 ]; then
+                echo "Build failed in TEMP_DIR, retrying in 5 seconds..."
+                sleep 5
+              fi
             done
 
             echo ">>> Creating backup of current production..."
@@ -89,9 +88,16 @@ jobs:
             npm install
 
             echo ">>> Building production version in PROD_DIR with memory limit..."
-            until NODE_OPTIONS="--max-old-space-size=1024" npm run build --verbose; do
-              echo "Production build failed, retrying in 5 seconds..."
-              sleep 5
+            BUILD_SUCCESS=1
+            while [ $BUILD_SUCCESS -ne 0 ]; do
+              echo ">>> Clearing Next.js cache..."
+              rm -rf .next
+              NODE_OPTIONS="--max-old-space-size=1024" NEXT_DISABLE_CACHE=1 npm run build --verbose
+              BUILD_SUCCESS=$?
+              if [ $BUILD_SUCCESS -ne 0 ]; then
+                echo "Production build failed, retrying in 5 seconds..."
+                sleep 5
+              fi
             done
 
             echo ">>> Restarting PM2 process..."
