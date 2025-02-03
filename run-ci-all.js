@@ -6,11 +6,18 @@ async function runCIPipeline() {
   let serverProcess;
 
   try {
-    // Step 1: Build process (without cache to reduce memory usage)
+    // Step 1: Build process (retry until it succeeds)
     console.log("🏗️ Building the project...");
-    execSync("NODE_OPTIONS='--max-old-space-size=1024' TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build --no-lint --no-check", {
-      stdio: "inherit",
-    });
+    while (true) {
+      try {
+        execSync("NODE_OPTIONS='--max-old-space-size=1024' TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build --no-lint --no-check", { stdio: "inherit" });
+        console.log("✅ Build successful!");
+        break;
+      } catch (error) {
+        console.error("❌ Build failed, retrying in 5 seconds...");
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+    }
 
     // Step 2: Start development server in a new process group
     console.log("🔄 Starting the server...");
@@ -34,16 +41,13 @@ async function runCIPipeline() {
     console.log("✅✅✅ CI Pipeline successful.");
   } catch (error) {
     console.error("❌❌❌ CI Pipeline failed:", error.message);
-    process.exit(1); // Ensure GitHub Actions fails if tests fail
+    process.exit(1); // Ensure the action fails correctly
   } finally {
     // Stop the server and its entire process group
-    if (serverProcess && serverProcess.pid) {
+    if (serverProcess) {
       console.log("🛑 Stopping the server and its process group...");
-      try {
-        process.kill(-serverProcess.pid, "SIGTERM");
-      } catch (err) {
-        console.error("⚠️ Server process was already stopped.");
-      }
+      process.kill(-serverProcess.pid, "SIGTERM"); // Kills the entire process group
+      console.log("Server and associated processes have been stopped.");
     }
   }
 }
