@@ -26,9 +26,6 @@ jobs:
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
 
-            # Globaler Node-Memory-Limit für alle nachfolgenden Prozesse
-            export NODE_OPTIONS="--max-old-space-size=1024"
-
             # Verzeichnisdefinitionen
             PROD_DIR=~/html/sunshine-cbd
             TEMP_DIR=~/html/sunshine-cbd_temp
