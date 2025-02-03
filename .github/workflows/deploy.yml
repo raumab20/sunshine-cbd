@@ -24,6 +24,9 @@ jobs:
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
 
+            # Setze global die Node-Optionen, z. B. um den maximal verfügbaren RAM zu begrenzen
+            export NODE_OPTIONS="--max-old-space-size=1024"
+
             # Verzeichnisdefinitionen
             PROD_DIR=~/html/sunshine-cbd
             TEMP_DIR=~/html/sunshine-cbd_temp
@@ -52,21 +55,20 @@ jobs:
             DEV_PID=$!
 
             echo ">>> Warte, bis der Dev-Server erreichbar ist..."
-            # Passe die URL/den Port ggf. an (hier: http://localhost:45620)
             npx wait-on http://localhost:45620 --timeout 60000
 
             echo ">>> Führe die Tests aus (npm run ci:all)..."
             npm run ci:all
             TEST_RESULT=$?
 
+            # Stelle sicher, dass der Dev-Server beendet wird
+            kill $DEV_PID || true
+
             if [ $TEST_RESULT -eq 0 ]; then
               echo ">>> Tests erfolgreich. Setze Deployment fort."
 
-              echo ">>> Stoppe den Dev-Server im temporären Verzeichnis..."
-              kill $DEV_PID
-
               echo ">>> Erstelle den Build im temporären Verzeichnis..."
-              until NODE_OPTIONS="--max-old-space-size=1024" npm run build --verbose; do
+              until npm run build --verbose; do
                 echo "Build fehlgeschlagen, versuche es in 5 Sekunden erneut..."
                 sleep 5
               done
@@ -83,8 +85,8 @@ jobs:
               npm install
 
               echo ">>> Erstelle den Produktions-Build..."
-              until NODE_OPTIONS="--max-old-space-size=1024" npm run build --verbose; do
-                echo "Build fehlgeschlagen, versuche es in 5 Sekunden erneut..."
+              until npm run build --verbose; do
+                echo "Produktions-Build fehlgeschlagen, versuche es in 5 Sekunden erneut..."
                 sleep 5
               done
 
@@ -95,8 +97,8 @@ jobs:
               rm -rf $TEMP_DIR
               rm -rf $BACKUP_DIR
             else
-              echo ">>> Tests fehlgeschlagen. Rollback: Alter Produktionsstand bleibt aktiv."
-              kill $DEV_PID
+              echo ">>> Tests fehlgeschlagen. Es wird kein neuer Build durchgeführt."
+              echo ">>> Alte Produktionsversion wird wieder gestartet..."
               cd $PROD_DIR
               pm2 start "npm start" --name sunshine-cbd
               rm -rf $TEMP_DIR
