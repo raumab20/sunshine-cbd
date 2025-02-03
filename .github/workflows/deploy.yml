@@ -37,8 +37,8 @@ jobs:
             pwd
 
             echo ">>> Stoppe die aktuell laufende Produktion (PM2)..."
-            pm2 stop all
-            pm2 delete all
+            pm2 stop all | true
+            pm2 delete all | true
 
             echo ">>> Erstelle temporäres Verzeichnis..."
             rm -rf $TEMP_DIR
