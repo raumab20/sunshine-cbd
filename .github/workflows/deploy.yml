@@ -21,10 +21,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             #!/bin/bash
+            set -e
+
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
 
-            # Setze global die Node-Optionen, z. B. um den maximal verfügbaren RAM zu begrenzen
+            # Globaler Node-Memory-Limit für alle nachfolgenden Prozesse
             export NODE_OPTIONS="--max-old-space-size=1024"
 
             # Verzeichnisdefinitionen
@@ -32,7 +34,7 @@ jobs:
             TEMP_DIR=~/html/sunshine-cbd_temp
             BACKUP_DIR=~/html/sunshine-cbd_backup
 
-            echo ">>> Stoppe die Anwendung (PM2)..."
+            echo ">>> Stoppe die aktuell laufende Produktion (PM2)..."
             pm2 stop all || true
             pm2 delete all || true
 
@@ -40,67 +42,64 @@ jobs:
             rm -rf $TEMP_DIR
             mkdir -p $TEMP_DIR
 
-            echo ">>> Kopiere aktuellen Produktionsstand in temporäres Verzeichnis..."
-            cp -R $PROD_DIR/. $TEMP_DIR/
+            echo ">>> Synchronisiere aktuellen Produktionsstand in TEMP_DIR..."
+            rsync -a --delete $PROD_DIR/ $TEMP_DIR/
 
-            echo ">>> Aktualisiere Code im temporären Verzeichnis (git pull)..."
+            echo ">>> Aktualisiere Code in TEMP_DIR (git pull)..."
             cd $TEMP_DIR
             git pull origin dev
 
-            echo ">>> Installiere Abhängigkeiten im temporären Verzeichnis..."
+            echo ">>> Installiere Abhängigkeiten in TEMP_DIR..."
             npm install
 
-            echo ">>> Starte den Dev-Server (npm run dev) für die Tests..."
+            echo ">>> Starte Dev-Server in TEMP_DIR für die Tests..."
             npm run dev &
             DEV_PID=$!
 
             echo ">>> Warte, bis der Dev-Server erreichbar ist..."
             npx wait-on http://localhost:45620 --timeout 60000
 
-            echo ">>> Führe die Tests aus (npm run ci:all)..."
+            echo ">>> Führe Tests aus (npm run ci:all) in TEMP_DIR..."
             npm run ci:all
             TEST_RESULT=$?
 
-            # Stelle sicher, dass der Dev-Server beendet wird
+            echo ">>> Stoppe den Dev-Server..."
             kill $DEV_PID || true
 
-            if [ $TEST_RESULT -eq 0 ]; then
-              echo ">>> Tests erfolgreich. Setze Deployment fort."
-
-              echo ">>> Erstelle den Build im temporären Verzeichnis..."
-              until npm run build --verbose; do
-                echo "Build fehlgeschlagen, versuche es in 5 Sekunden erneut..."
-                sleep 5
-              done
-
-              echo ">>> Sichere den aktuellen Produktionsstand..."
-              rm -rf $BACKUP_DIR
-              cp -R $PROD_DIR $BACKUP_DIR
-
-              echo ">>> Übertrage neuen Code per rsync in den Produktionsordner..."
-              rsync -av --delete $TEMP_DIR/ $PROD_DIR/
-
-              echo ">>> Installiere Abhängigkeiten im Produktionsordner..."
-              cd $PROD_DIR
-              npm install
-
-              echo ">>> Erstelle den Produktions-Build..."
-              until npm run build --verbose; do
-                echo "Produktions-Build fehlgeschlagen, versuche es in 5 Sekunden erneut..."
-                sleep 5
-              done
-
-              echo ">>> Starte den PM2-Prozess neu..."
-              pm2 start "npm start" --name sunshine-cbd
-
-              echo ">>> Deployment abgeschlossen!"
-              rm -rf $TEMP_DIR
-              rm -rf $BACKUP_DIR
-            else
-              echo ">>> Tests fehlgeschlagen. Es wird kein neuer Build durchgeführt."
-              echo ">>> Alte Produktionsversion wird wieder gestartet..."
+            if [ $TEST_RESULT -ne 0 ]; then
+              echo ">>> Tests fehlgeschlagen. Behalte die bestehende Produktionsversion."
               cd $PROD_DIR
               pm2 start "npm start" --name sunshine-cbd
               rm -rf $TEMP_DIR
               exit 1
             fi
+
+            echo ">>> Tests erfolgreich. Starte Build in TEMP_DIR (wiederholen bis Erfolg)..."
+            until npm run build --verbose; do
+              echo "Build in TEMP_DIR fehlgeschlagen, versuche in 5 Sekunden erneut..."
+              sleep 5
+            done
+
+            echo ">>> Backup der aktuellen Produktion wird erstellt..."
+            rm -rf $BACKUP_DIR
+            cp -R $PROD_DIR $BACKUP_DIR
+
+            echo ">>> Neue Version aus TEMP_DIR wird in Produktion deployt..."
+            rsync -av --delete $TEMP_DIR/ $PROD_DIR/
+
+            echo ">>> Installiere Abhängigkeiten in PROD_DIR..."
+            cd $PROD_DIR
+            npm install
+
+            echo ">>> Führe Produktions-Build in PROD_DIR aus (wiederholen bis Erfolg)..."
+            until npm run build --verbose; do
+              echo "Produktions-Build fehlgeschlagen, versuche in 5 Sekunden erneut..."
+              sleep 5
+            done
+
+            echo ">>> Starte die Produktionsversion via PM2..."
+            pm2 start "npm start" --name sunshine-cbd
+
+            echo ">>> Deployment abgeschlossen!"
+            rm -rf $TEMP_DIR
+            rm -rf $BACKUP_DIR
