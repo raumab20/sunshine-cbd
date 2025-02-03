@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             #!/bin/bash
-            set -e
+            # Keine set -e, damit wir Fehler manuell behandeln können
 
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
@@ -33,12 +33,12 @@ jobs:
 
             # Wechsel in das Produktionsverzeichnis (nur zur Anzeige)
             cd $PROD_DIR
-            echo ">>> Changed to directory:"
+            echo ">>> Changed to directory:" 
             pwd
 
             echo ">>> Stoppe die aktuell laufende Produktion (PM2)..."
-            pm2 stop all | true
-            pm2 delete all | true
+            pm2 stop all || true
+            pm2 delete all || true
 
             echo ">>> Erstelle temporäres Verzeichnis..."
             rm -rf $TEMP_DIR
@@ -55,11 +55,21 @@ jobs:
             npm install
 
             echo ">>> Running tests in TEMP_DIR with memory limit..."
-            until NODE_OPTIONS="--max-old-space-size=1024" npm run ci:all; do
-              echo "Tests failed, retrying in 5 seconds..."
-              sleep 5
-            done
-            echo ">>> Tests passed in TEMP_DIR."
+            TEST_EXIT=0
+            if ! NODE_OPTIONS="--max-old-space-size=1024" npm run ci:all; then
+              TEST_EXIT=1
+              echo ">>> Tests failed in TEMP_DIR!"
+            else
+              echo ">>> Tests passed in TEMP_DIR."
+            fi
+
+            if [ $TEST_EXIT -ne 0 ]; then
+              echo ">>> Cleaning up TEMP_DIR and restarting production with existing version..."
+              cd $PROD_DIR
+              pm2 start "npm start" --name sunshine-cbd
+              rm -rf $TEMP_DIR
+              exit 1
+            fi
 
             echo ">>> Building the project in TEMP_DIR with memory limit..."
             until NODE_OPTIONS="--max-old-space-size=1024" npm run build --verbose; do
@@ -67,7 +77,7 @@ jobs:
               sleep 5
             done
 
-            echo ">>> Backup der aktuellen Produktion wird erstellt..."
+            echo ">>> Creating backup of current production..."
             rm -rf $BACKUP_DIR
             cp -R $PROD_DIR $BACKUP_DIR
 
@@ -87,7 +97,7 @@ jobs:
             echo ">>> Restarting PM2 process..."
             pm2 start "npm start" --name sunshine-cbd
 
-            echo ">>> Cleaning up: Lösche TEMP_DIR..."
+            echo ">>> Cleaning up: Deleting TEMP_DIR..."
             rm -rf $TEMP_DIR
 
             echo ">>> Deployment complete!"
