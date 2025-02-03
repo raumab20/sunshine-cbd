@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Test and Deploy via SSH
+      - name: Deploy to Uberspace via SSH
         uses: appleboy/ssh-action@master
         with:
           host: horologium.uberspace.de
@@ -31,9 +31,14 @@ jobs:
             TEMP_DIR=~/html/sunshine-cbd_temp
             BACKUP_DIR=~/html/sunshine-cbd_backup
 
+            # Wechsel in das Produktionsverzeichnis (nur zur Anzeige)
+            cd $PROD_DIR
+            echo ">>> Changed to directory:"
+            pwd
+
             echo ">>> Stoppe die aktuell laufende Produktion (PM2)..."
-            pm2 stop all || true
-            pm2 delete all || true
+            pm2 stop all
+            pm2 delete all
 
             echo ">>> Erstelle temporäres Verzeichnis..."
             rm -rf $TEMP_DIR
@@ -46,34 +51,19 @@ jobs:
             cd $TEMP_DIR
             git pull origin dev
 
-            echo ">>> Installiere Abhängigkeiten in TEMP_DIR..."
+            echo ">>> Installing dependencies in TEMP_DIR..."
             npm install
 
-            echo ">>> Starte Dev-Server in TEMP_DIR für die Tests..."
-            npm run dev &
-            DEV_PID=$!
+            echo ">>> Running tests in TEMP_DIR with memory limit..."
+            until NODE_OPTIONS="--max-old-space-size=1024" npm run ci:all; do
+              echo "Tests failed, retrying in 5 seconds..."
+              sleep 5
+            done
+            echo ">>> Tests passed in TEMP_DIR."
 
-            echo ">>> Warte, bis der Dev-Server erreichbar ist..."
-            npx wait-on http://localhost:45620 --timeout 60000
-
-            echo ">>> Führe Tests aus (npm run ci:all) in TEMP_DIR..."
-            npm run ci:all
-            TEST_RESULT=$?
-
-            echo ">>> Stoppe den Dev-Server..."
-            kill $DEV_PID || true
-
-            if [ $TEST_RESULT -ne 0 ]; then
-              echo ">>> Tests fehlgeschlagen. Behalte die bestehende Produktionsversion."
-              cd $PROD_DIR
-              pm2 start "npm start" --name sunshine-cbd
-              rm -rf $TEMP_DIR
-              exit 1
-            fi
-
-            echo ">>> Tests erfolgreich. Starte Build in TEMP_DIR (wiederholen bis Erfolg)..."
-            until npm run build --verbose; do
-              echo "Build in TEMP_DIR fehlgeschlagen, versuche in 5 Sekunden erneut..."
+            echo ">>> Building the project in TEMP_DIR with memory limit..."
+            until NODE_OPTIONS="--max-old-space-size=1024" npm run build --verbose; do
+              echo "Build failed in TEMP_DIR, retrying in 5 seconds..."
               sleep 5
             done
 
@@ -81,22 +71,23 @@ jobs:
             rm -rf $BACKUP_DIR
             cp -R $PROD_DIR $BACKUP_DIR
 
-            echo ">>> Neue Version aus TEMP_DIR wird in Produktion deployt..."
+            echo ">>> Deploying new version from TEMP_DIR to PROD_DIR..."
             rsync -av --delete $TEMP_DIR/ $PROD_DIR/
 
-            echo ">>> Installiere Abhängigkeiten in PROD_DIR..."
+            echo ">>> Installing dependencies in PROD_DIR..."
             cd $PROD_DIR
             npm install
 
-            echo ">>> Führe Produktions-Build in PROD_DIR aus (wiederholen bis Erfolg)..."
-            until npm run build --verbose; do
-              echo "Produktions-Build fehlgeschlagen, versuche in 5 Sekunden erneut..."
+            echo ">>> Building production version in PROD_DIR with memory limit..."
+            until NODE_OPTIONS="--max-old-space-size=1024" npm run build --verbose; do
+              echo "Production build failed, retrying in 5 seconds..."
               sleep 5
             done
 
-            echo ">>> Starte die Produktionsversion via PM2..."
+            echo ">>> Restarting PM2 process..."
             pm2 start "npm start" --name sunshine-cbd
 
-            echo ">>> Deployment abgeschlossen!"
+            echo ">>> Cleaning up: Lösche TEMP_DIR..."
             rm -rf $TEMP_DIR
-            rm -rf $BACKUP_DIR
+
+            echo ">>> Deployment complete!"
