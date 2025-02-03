@@ -28,7 +28,6 @@ jobs:
 
             PROD_DIR=~/html/sunshine-cbd
             TEMP_DIR=~/html/sunshine-cbd_temp
-            BACKUP_DIR=~/html/sunshine-cbd_backup
 
             echo ">>> Stopping current production (PM2)..."
             pm2 stop all || true
@@ -50,14 +49,7 @@ jobs:
 
             echo ">>> Running tests in TEMP_DIR with memory limit..."
             export NODE_OPTIONS="--max-old-space-size=1024"
-            if ! npm run ci:all; then
-              echo ">>> Tests failed in TEMP_DIR!"
-              echo ">>> Cleaning up TEMP_DIR and restarting production..."
-              rm -rf $TEMP_DIR
-              cd $PROD_DIR
-              pm2 start "npm start" --name sunshine-cbd
-              exit 1
-            fi
+            npm run ci:all || TEST_FAILED=true
 
             echo ">>> Clearing Next.js cache..."
             rm -rf .next
@@ -72,6 +64,14 @@ jobs:
               echo "❌ Build failed, retrying in 5 seconds..."
               sleep 5
             done
+
+            if [ "$TEST_FAILED" = "true" ]; then
+              echo "❌ Tests failed! Deployment aborted."
+              rm -rf $TEMP_DIR
+              cd $PROD_DIR
+              pm2 start "npm start" --name sunshine-cbd
+              exit 1
+            fi
 
             echo ">>> Deployment successful! Swapping to production..."
             rm -rf $PROD_DIR
