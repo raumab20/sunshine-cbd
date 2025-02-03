@@ -1,4 +1,4 @@
-name: Deploy to Uberspace
+name: Test and Deploy to Uberspace
 
 on:
   push:
@@ -13,38 +13,92 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Deploy to Uberspace via SSH
+      - name: Test and Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
           host: horologium.uberspace.de
           username: kasunshi
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            #!/bin/bash
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
-            cd ~/html/sunshine-cbd
-            echo ">>> Changed to directory:"
-            pwd
 
-            echo ">>> Pulling latest code..."
+            # Verzeichnisdefinitionen
+            PROD_DIR=~/html/sunshine-cbd
+            TEMP_DIR=~/html/sunshine-cbd_temp
+            BACKUP_DIR=~/html/sunshine-cbd_backup
+
+            echo ">>> Stoppe die Anwendung (PM2)..."
+            pm2 stop all || true
+            pm2 delete all || true
+
+            echo ">>> Erstelle temporäres Verzeichnis..."
+            rm -rf $TEMP_DIR
+            mkdir -p $TEMP_DIR
+
+            echo ">>> Kopiere aktuellen Produktionsstand in temporäres Verzeichnis..."
+            cp -R $PROD_DIR/. $TEMP_DIR/
+
+            echo ">>> Aktualisiere Code im temporären Verzeichnis (git pull)..."
+            cd $TEMP_DIR
             git pull origin dev
 
-            echo ">>> Stop the application..."
-            pm2 stop all
-            pm2 delete all
-            
-            echo ">>> Installing dependencies..."
+            echo ">>> Installiere Abhängigkeiten im temporären Verzeichnis..."
             npm install
-            
-            echo ">>> Building the project..."
-            # Wiederhole den Build-Prozess, falls er fehlschlägt
-            until NODE_OPTIONS="--max-old-space-size=512" npm run build --verbose; do
-              echo "Build failed, retrying in 5 seconds..."
 
-              sleep 5
-            done
-            
-            echo ">>> Restarting PM2 process..."
-            pm2 start "npm start" --name sunshine-cbd
-            
-            echo ">>> Deployment complete!"
+            echo ">>> Starte den Dev-Server (npm run dev) für die Tests..."
+            npm run dev &
+            DEV_PID=$!
+
+            echo ">>> Warte, bis der Dev-Server erreichbar ist..."
+            # Passe die URL/den Port ggf. an (hier: http://localhost:45620)
+            npx wait-on http://localhost:45620 --timeout 60000
+
+            echo ">>> Führe die Tests aus (npm run ci:all)..."
+            npm run ci:all
+            TEST_RESULT=$?
+
+            if [ $TEST_RESULT -eq 0 ]; then
+              echo ">>> Tests erfolgreich. Setze Deployment fort."
+
+              echo ">>> Stoppe den Dev-Server im temporären Verzeichnis..."
+              kill $DEV_PID
+
+              echo ">>> Erstelle den Build im temporären Verzeichnis..."
+              until NODE_OPTIONS="--max-old-space-size=1024" npm run build --verbose; do
+                echo "Build fehlgeschlagen, versuche es in 5 Sekunden erneut..."
+                sleep 5
+              done
+
+              echo ">>> Sichere den aktuellen Produktionsstand..."
+              rm -rf $BACKUP_DIR
+              cp -R $PROD_DIR $BACKUP_DIR
+
+              echo ">>> Übertrage neuen Code per rsync in den Produktionsordner..."
+              rsync -av --delete $TEMP_DIR/ $PROD_DIR/
+
+              echo ">>> Installiere Abhängigkeiten im Produktionsordner..."
+              cd $PROD_DIR
+              npm install
+
+              echo ">>> Erstelle den Produktions-Build..."
+              until NODE_OPTIONS="--max-old-space-size=1024" npm run build --verbose; do
+                echo "Build fehlgeschlagen, versuche es in 5 Sekunden erneut..."
+                sleep 5
+              done
+
+              echo ">>> Starte den PM2-Prozess neu..."
+              pm2 start "npm start" --name sunshine-cbd
+
+              echo ">>> Deployment abgeschlossen!"
+              rm -rf $TEMP_DIR
+              rm -rf $BACKUP_DIR
+            else
+              echo ">>> Tests fehlgeschlagen. Rollback: Alter Produktionsstand bleibt aktiv."
+              kill $DEV_PID
+              cd $PROD_DIR
+              pm2 start "npm start" --name sunshine-cbd
+              rm -rf $TEMP_DIR
+              exit 1
+            fi
