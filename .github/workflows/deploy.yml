@@ -21,12 +21,11 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             #!/bin/bash
-            # Wir verzichten bewusst auf "set -e", damit wir einzelne Fehler abfangen und den Ablauf kontrolliert beenden können.
-
+            # Wir verzichten bewusst auf "set -e", um Fehler gezielt behandeln zu können.
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
 
-            # Setze das Memory-Limit für alle Node-Prozesse auf 512 MB
+            # Setze global das Memory-Limit für alle Node-Prozesse auf 512 MB
             export NODE_OPTIONS="--max-old-space-size=512"
 
             # Definiere Verzeichnisse
@@ -51,11 +50,15 @@ jobs:
             echo ">>> Installing dependencies in TEMP_DIR..."
             npm install
 
-            # Führe sequentiell die Tests aus (Jest und Cypress)
-            echo ">>> Running Jest tests in TEMP_DIR..."
-            npm run test:jest || { echo "❌ Jest tests failed! Aborting deployment."; exit 1; }
-            echo ">>> Running Cypress tests in TEMP_DIR..."
-            npx cypress run --headless --browser chrome --config video=false,screenshotOnRunFailure=false || { echo "❌ Cypress tests failed! Aborting deployment."; exit 1; }
+            echo ">>> Loading local environment for testing..."
+            # Lade alle Variablen aus .env.local (Kommentare, Leerzeilen etc. sollten korrekt formatiert sein)
+            set -o allexport
+            source .env.local
+            set +o allexport
+
+            echo ">>> Running CI Pipeline tests in TEMP_DIR..."
+            # Hier wird deine komplette Test-Pipeline (z. B. Jest & Cypress) aufgerufen.
+            NODE_OPTIONS="--max-old-space-size=512" npm run ci:all || { echo "❌ CI tests failed! Aborting deployment."; exit 1; }
 
             echo ">>> Clearing Next.js cache..."
             rm -rf .next
@@ -65,7 +68,7 @@ jobs:
             while true; do
               echo ">>> Clearing Next.js cache before build..."
               rm -rf .next
-              NODE_OPTIONS="--max-old-space-size=512" TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build --no-lint --no-check
+              NODE_OPTIONS="--max-old-space-size=512" TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build:local --no-lint --no-check
               if [ $? -eq 0 ]; then
                 echo "✅ Build successful in TEMP_DIR!"
                 break
