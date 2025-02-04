@@ -48,7 +48,7 @@ jobs:
             npm install
 
             echo ">>> Running tests in TEMP_DIR..."
-            export NODE_OPTIONS="--max-old-space-size=1024"
+            export NODE_OPTIONS="--max-old-space-size=512"
             npm run ci:all || TEST_FAILED=true
 
             echo ">>> Clearing Next.js cache..."
@@ -58,7 +58,7 @@ jobs:
             ATTEMPTS=0
             while [ $ATTEMPTS -lt 5 ]; do
               export NODE_ENV=production
-              export NODE_OPTIONS="--max-old-space-size=1024"
+              export NODE_OPTIONS="--max-old-space-size=512"
               export NEXT_DISABLE_CACHE=1
               export NEXT_STATIC_EXPORT=1
               TURBO_FORCE=1 npm run build --no-lint --no-check
