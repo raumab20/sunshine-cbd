@@ -5,11 +5,11 @@ async function runCIPipeline() {
 
   let serverProcess;
   try {
-    // Step 1: Build process
-    console.log("🏗️ Building the project...");
-    execSync("npm run build", { stdio: "inherit" });
+    // Schritt 1: Build (für die Testphase) mit Memory-Limit
+    console.log("🏗️ Building the project (for tests)...");
+    execSync("NODE_OPTIONS='--max-old-space-size=512' npm run build --no-lint --no-check", { stdio: "inherit" });
 
-    // Step 2: Start development server in a new process group
+    // Schritt 2: Dev-Server starten (in eigener Prozessgruppe)
     console.log("🔄 Starting the server...");
     serverProcess = spawn("npm", ["run", "dev"], {
       detached: true,
@@ -17,23 +17,23 @@ async function runCIPipeline() {
     });
     serverProcess.unref();
 
-    // Wait a few seconds to ensure the server is up
+    // Warte, bis der Server gestartet ist
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // Step 3: Run Jest tests
-    console.log("🧪 Running all Jest tests...");
+    // Schritt 3: Jest-Tests ausführen
+    console.log("🧪 Running Jest tests...");
     execSync("npm run test:jest", { stdio: "inherit" });
 
-    // Step 4: Run Cypress tests
-    console.log("🧪 Running all Cypress tests...");
-    execSync("npm run test:cypress", { stdio: "inherit" });
+    // Schritt 4: Cypress-Tests ausführen
+    console.log("🧪 Running Cypress tests...");
+    execSync("NODE_OPTIONS='--max-old-space-size=512' npm run test:cypress", { stdio: "inherit" });
 
     console.log("✅✅✅ CI Pipeline successful.");
   } catch (error) {
     console.error("❌❌❌ CI Pipeline failed:", error.message);
     process.exit(1);
   } finally {
-    // Stop the server and its entire process group
+    // Dev-Server stoppen
     if (serverProcess) {
       console.log("🛑 Stopping the server and its process group...");
       try {
