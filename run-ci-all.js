@@ -4,19 +4,26 @@ async function runCIPipeline() {
   console.log("🌞 Running CI Pipeline...");
 
   let serverProcess;
+  let attempts = 0;
 
   try {
-    // Step 1: Build process (retry until it succeeds)
+    // Step 1: Build process (retry up to 5 times)
     console.log("🏗️ Building the project...");
-    while (true) {
+    while (attempts < 5) {
       try {
-        execSync("NODE_OPTIONS='--max-old-space-size=1024' TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build --no-lint --no-check", { stdio: "inherit" });
+        execSync("NODE_ENV=production NODE_OPTIONS='--max-old-space-size=1024' TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 NEXT_STATIC_EXPORT=1 npm run build --no-lint --no-check", { stdio: "inherit" });
         console.log("✅ Build successful!");
         break;
       } catch (error) {
-        console.error("❌ Build failed, retrying in 5 seconds...");
+        attempts++;
+        console.error(`❌ Build failed (attempt ${attempts}/5), retrying in 5 seconds...`);
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
+    }
+
+    if (attempts >= 5) {
+      console.error("❌ Build failed after 5 attempts. Exiting...");
+      process.exit(1);
     }
 
     // Step 2: Start development server in a new process group
@@ -41,7 +48,7 @@ async function runCIPipeline() {
     console.log("✅✅✅ CI Pipeline successful.");
   } catch (error) {
     console.error("❌❌❌ CI Pipeline failed:", error.message);
-    process.exit(1); // Ensure the action fails correctly
+    process.exit(1);
   } finally {
     // Stop the server and its entire process group
     if (serverProcess) {

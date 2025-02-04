@@ -47,7 +47,7 @@ jobs:
             echo ">>> Installing dependencies..."
             npm install
 
-            echo ">>> Running tests in TEMP_DIR with memory limit..."
+            echo ">>> Running tests in TEMP_DIR..."
             export NODE_OPTIONS="--max-old-space-size=1024"
             npm run ci:all || TEST_FAILED=true
 
@@ -55,15 +55,26 @@ jobs:
             rm -rf .next
 
             echo ">>> Building the project with retry on failure..."
-            while true; do
-              NODE_OPTIONS="--max-old-space-size=1024" TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build --no-lint --no-check
+            ATTEMPTS=0
+            while [ $ATTEMPTS -lt 5 ]; do
+              export NODE_ENV=production
+              export NODE_OPTIONS="--max-old-space-size=1024"
+              export NEXT_DISABLE_CACHE=1
+              export NEXT_STATIC_EXPORT=1
+              TURBO_FORCE=1 npm run build --no-lint --no-check
               if [ $? -eq 0 ]; then
                 echo "✅ Build successful!"
                 break
               fi
               echo "❌ Build failed, retrying in 5 seconds..."
+              ATTEMPTS=$((ATTEMPTS+1))
               sleep 5
             done
+
+            if [ $ATTEMPTS -ge 5 ]; then
+              echo "❌ Build failed after 5 attempts. Exiting..."
+              exit 1
+            fi
 
             if [ "$TEST_FAILED" = "true" ]; then
               echo "❌ Tests failed! Deployment aborted."
