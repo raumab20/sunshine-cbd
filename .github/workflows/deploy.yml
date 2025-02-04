@@ -1,50 +1,56 @@
 name: Deploy to Uberspace
 
 on:
- push:
-   branches:
-     - dev
+  push:
+    branches:
+      - dev
 
 jobs:
- deploy:
-   runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
 
-   steps:
-     - name: Checkout Repository
-       uses: actions/checkout@v3
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-     - name: Deploy to Uberspace via SSH
-       uses: appleboy/ssh-action@master
-       with:
-         host: horologium.uberspace.de
-         username: kasunshi
-         key: ${{ secrets.SSH_PRIVATE_KEY }}
-         script: |
-           echo ">>> Adding ~/bin to PATH..."
-           export PATH=$PATH:~/bin
-           cd ~/html/sunshine-cbd
-           echo ">>> Changed to directory:"
-           pwd
+      - name: Deploy to Uberspace via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: horologium.uberspace.de
+          username: kasunshi
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo ">>> Adding ~/bin to PATH..."
+            export PATH=$PATH:~/bin
+            cd ~/html/sunshine-cbd
+            echo ">>> Changed to directory:"
+            pwd
 
-           echo ">>> Pulling latest code..."
-           git pull origin dev
+            echo ">>> Pulling latest code..."
+            git pull origin dev
 
-           echo ">>> Stop the application..."
-           pm2 stop all
-           pm2 delete all
-          
-           echo ">>> Installing dependencies..."
-           npm install
-          
-           echo ">>> Building the project..."
-           # Wiederhole den Build-Prozess, falls er fehlschlägt
-           until NODE_OPTIONS="--max-old-space-size=512" npm run build --verbose; do
-             echo "Build failed, retrying in 5 seconds..."
+            echo ">>> Stopping PM2 processes..."
+            pm2 stop all
+            pm2 delete all
 
-             sleep 5
-           done
-          
-           echo ">>> Restarting PM2 process..."
-           pm2 start "npm start" --name sunshine-cbd
-          
-           echo ">>> Deployment complete!"
+            echo ">>> Installing dependencies..."
+            npm install
+
+            echo ">>> Running CI Pipeline..."
+            if npm run ci:all; then
+              echo "✅ CI Pipeline successful. Proceeding to production deployment..."
+              
+              echo ">>> Building the project..."
+              until NODE_OPTIONS="--max-old-space-size=512" npm run build --verbose; do
+                echo "Build failed, retrying in 5 seconds..."
+                sleep 5
+              done
+
+              echo ">>> Starting production..."
+              pm2 start "npm start" --name sunshine-cbd
+              echo "🚀 Deployment complete!"
+            else
+              echo "❌ CI Pipeline failed. Restarting old production..."
+              pm2 start "npm start" --name sunshine-cbd
+              echo "♻️ Old production restarted."
+            fi
