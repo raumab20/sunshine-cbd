@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Deploy & Test on Server via SSH
+      - name: Deploy to Uberspace via SSH with Memory Logging and Build-Repetition
         uses: appleboy/ssh-action@master
         with:
           host: horologium.uberspace.de
@@ -21,25 +21,29 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             #!/bin/bash
-            set -e
-
-            # Funktion, um den aktuellen Speicherstatus auszugeben
-            function log_memory() {
-              echo ">>> Memory usage (free -m):"
-              free -m
-            }
-
+            # Wir nutzen hier "set -e" nicht strikt, damit wir Fehler manuell behandeln können.
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
 
-            # Verzeichnisse definieren
+            # Arbeitsverzeichnisse
             PROD_DIR=~/html/sunshine-cbd
             TEMP_DIR=~/html/sunshine-cbd_temp
-            BACKUP_DIR=~/html/sunshine-cbd_backup
+
+            # Funktion zur Ausgabe von Memory-Status (unter Linux)
+            function log_memory() {
+              echo ">>> Memory usage (free -m):"
+              free -m
+              echo ">>> Top processes (top -b -n 1 | head -20):"
+              top -b -n 1 | head -20
+            }
+
+            log_memory
 
             echo ">>> Stopping current production (PM2)..."
             pm2 stop all || true
             pm2 delete all || true
+
+            log_memory
 
             echo ">>> Creating temporary directory..."
             rm -rf $TEMP_DIR
@@ -58,55 +62,51 @@ jobs:
             log_memory
 
             echo ">>> Running tests in TEMP_DIR with memory limit..."
+            # Setze das Memory-Limit für alle Node-Prozesse
             export NODE_OPTIONS="--max-old-space-size=512"
-            if ! node run-ci-all.js; then
-              echo ">>> Tests failed in TEMP_DIR! Rolling back production..."
-              rm -rf $TEMP_DIR
-              cd $PROD_DIR
-              pm2 start "npm start" --name sunshine-cbd
-              exit 1
-            fi
-            echo ">>> Tests passed in TEMP_DIR."
-            
+            # Führe die Tests aus (hier sollten deine Test-Skripte in package.json definiert sein, z.B. "ci:all")
+            npm run ci:all || TEST_FAILED=true
+
             log_memory
 
             echo ">>> Clearing Next.js cache before build..."
             rm -rf .next
 
-            echo ">>> Building the project in TEMP_DIR with retry on failure (up to 10 attempts)..."
+            echo ">>> Building the project in TEMP_DIR with retry on failure..."
             ATTEMPTS=0
-            while [ $ATTEMPTS -lt 10 ]; do
-              export NODE_OPTIONS="--max-old-space-size=512"
-              TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build --no-lint --no-check
+            # Wiederhole den Build solange, bis er erfolgreich ist.
+            while true; do
+              export NODE_ENV=production
+              # Hier werden einige Parameter gesetzt, um den Cache zu deaktivieren und den Speicherverbrauch zu reduzieren.
+              NODE_OPTIONS="--max-old-space-size=512" TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build --no-lint --no-check
               if [ $? -eq 0 ]; then
-                echo "✅ Build successful!"
+                echo "✅ Build successful in TEMP_DIR!"
                 break
               fi
               ATTEMPTS=$((ATTEMPTS+1))
-              echo "❌ Build failed (attempt $ATTEMPTS), retrying in 5 seconds..."
+              echo "❌ Build failed (attempt ${ATTEMPTS}), retrying in 5 seconds..."
               sleep 5
             done
 
-            if [ $ATTEMPTS -ge 10 ]; then
-              echo "❌ Build failed after 10 attempts. Aborting deployment."
+            log_memory
+
+            if [ "$TEST_FAILED" = "true" ]; then
+              echo "❌ Tests failed! Rolling back production..."
+              rm -rf $TEMP_DIR
+              cd $PROD_DIR
+              pm2 start "npm start" --name sunshine-cbd
               exit 1
             fi
 
+            echo ">>> Deployment successful! Swapping TEMP_DIR to production..."
+            rm -rf $PROD_DIR
+            mv $TEMP_DIR $PROD_DIR
+
             log_memory
 
-            echo ">>> Creating backup of current production..."
-            rm -rf $BACKUP_DIR
-            cp -R $PROD_DIR $BACKUP_DIR
-
-            echo ">>> Deploying new version from TEMP_DIR to production..."
-            rsync -av --delete $TEMP_DIR/ $PROD_DIR/
-
-            echo ">>> Restarting PM2 process..."
+            echo ">>> Restarting PM2 process in production..."
             cd $PROD_DIR
             pm2 start "npm start" --name sunshine-cbd
-
-            echo ">>> Cleaning up: Deleting TEMP_DIR..."
-            rm -rf $TEMP_DIR
 
             log_memory
 
