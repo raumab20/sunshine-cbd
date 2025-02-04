@@ -8,6 +8,8 @@
     "postinstall": "prisma generate",
     "seed": "ts-node --esm prisma/seed.js",
     "build": "next build",
+    "build:local": "set -o allexport && source .env.local && set +o allexport && next build",
+    "build:prod": "next build",
     "start": "next start -p 45620",
     "lint": "next lint",
     "test": "jest",

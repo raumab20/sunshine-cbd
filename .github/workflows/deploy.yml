@@ -21,21 +21,17 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             #!/bin/bash
-            # Wir verzichten bewusst auf set -e, um Fehler in einzelnen Schritten zu behandeln.
+            # Wir verzichten bewusst auf "set -e", damit wir einzelne Fehler abfangen und den Ablauf kontrolliert beenden können.
 
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
 
-            # Setze Memory-Limit für alle Node-Prozesse auf 512 MB
+            # Setze das Memory-Limit für alle Node-Prozesse auf 512 MB
             export NODE_OPTIONS="--max-old-space-size=512"
 
             # Definiere Verzeichnisse
             PROD_DIR=~/html/sunshine-cbd
             TEMP_DIR=~/html/sunshine-cbd_temp
-
-            # Ausgabe aktueller Memory-Status (optional)
-            echo ">>> Memory usage (free -m):"
-            free -m
 
             echo ">>> Stopping current production (PM2)..."
             pm2 stop all || true
@@ -55,12 +51,11 @@ jobs:
             echo ">>> Installing dependencies in TEMP_DIR..."
             npm install
 
-            # Falls du Tests ausführen möchtest, füge hier die Testschritte ein.
-            # Beispiel (sequentiell, ohne parallele Prozesse):
+            # Führe sequentiell die Tests aus (Jest und Cypress)
             echo ">>> Running Jest tests in TEMP_DIR..."
             npm run test:jest || { echo "❌ Jest tests failed! Aborting deployment."; exit 1; }
             echo ">>> Running Cypress tests in TEMP_DIR..."
-            npx cypress run --max-workers=1 --headless --browser chrome --config video=false,screenshotOnRunFailure=false || { echo "❌ Cypress tests failed! Aborting deployment."; exit 1; }
+            npx cypress run --headless --browser chrome --config video=false,screenshotOnRunFailure=false || { echo "❌ Cypress tests failed! Aborting deployment."; exit 1; }
 
             echo ">>> Clearing Next.js cache..."
             rm -rf .next
