@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Deploy to Uberspace via SSH with Memory Logging and Build-Repetition
+      - name: Deploy to Uberspace via SSH (sequentiell, speichersparend)
         uses: appleboy/ssh-action@master
         with:
           host: horologium.uberspace.de
@@ -21,29 +21,25 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             #!/bin/bash
-            # Wir nutzen hier "set -e" nicht strikt, damit wir Fehler manuell behandeln können.
+            # Wir verzichten bewusst auf set -e, um Fehler in einzelnen Schritten zu behandeln.
+
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
 
-            # Arbeitsverzeichnisse
+            # Setze Memory-Limit für alle Node-Prozesse auf 512 MB
+            export NODE_OPTIONS="--max-old-space-size=512"
+
+            # Definiere Verzeichnisse
             PROD_DIR=~/html/sunshine-cbd
             TEMP_DIR=~/html/sunshine-cbd_temp
 
-            # Funktion zur Ausgabe von Memory-Status (unter Linux)
-            function log_memory() {
-              echo ">>> Memory usage (free -m):"
-              free -m
-              echo ">>> Top processes (top -b -n 1 | head -20):"
-              top -b -n 1 | head -20
-            }
-
-            log_memory
+            # Ausgabe aktueller Memory-Status (optional)
+            echo ">>> Memory usage (free -m):"
+            free -m
 
             echo ">>> Stopping current production (PM2)..."
             pm2 stop all || true
             pm2 delete all || true
-
-            log_memory
 
             echo ">>> Creating temporary directory..."
             rm -rf $TEMP_DIR
@@ -59,25 +55,21 @@ jobs:
             echo ">>> Installing dependencies in TEMP_DIR..."
             npm install
 
-            log_memory
+            # Falls du Tests ausführen möchtest, füge hier die Testschritte ein.
+            # Beispiel (sequentiell, ohne parallele Prozesse):
+            echo ">>> Running Jest tests in TEMP_DIR..."
+            npm run test:jest || { echo "❌ Jest tests failed! Aborting deployment."; exit 1; }
+            echo ">>> Running Cypress tests in TEMP_DIR..."
+            npx cypress run --max-workers=1 --headless --browser chrome --config video=false,screenshotOnRunFailure=false || { echo "❌ Cypress tests failed! Aborting deployment."; exit 1; }
 
-            echo ">>> Running tests in TEMP_DIR with memory limit..."
-            # Setze das Memory-Limit für alle Node-Prozesse
-            export NODE_OPTIONS="--max-old-space-size=512"
-            # Führe die Tests aus (hier sollten deine Test-Skripte in package.json definiert sein, z.B. "ci:all")
-            npm run ci:all || TEST_FAILED=true
-
-            log_memory
-
-            echo ">>> Clearing Next.js cache before build..."
+            echo ">>> Clearing Next.js cache..."
             rm -rf .next
 
-            echo ">>> Building the project in TEMP_DIR with retry on failure..."
+            echo ">>> Building the project in TEMP_DIR (retry until success)..."
             ATTEMPTS=0
-            # Wiederhole den Build solange, bis er erfolgreich ist.
             while true; do
-              export NODE_ENV=production
-              # Hier werden einige Parameter gesetzt, um den Cache zu deaktivieren und den Speicherverbrauch zu reduzieren.
+              echo ">>> Clearing Next.js cache before build..."
+              rm -rf .next
               NODE_OPTIONS="--max-old-space-size=512" TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build --no-lint --no-check
               if [ $? -eq 0 ]; then
                 echo "✅ Build successful in TEMP_DIR!"
@@ -88,26 +80,12 @@ jobs:
               sleep 5
             done
 
-            log_memory
-
-            if [ "$TEST_FAILED" = "true" ]; then
-              echo "❌ Tests failed! Rolling back production..."
-              rm -rf $TEMP_DIR
-              cd $PROD_DIR
-              pm2 start "npm start" --name sunshine-cbd
-              exit 1
-            fi
-
-            echo ">>> Deployment successful! Swapping TEMP_DIR to production..."
+            echo ">>> Replacing production with new build..."
             rm -rf $PROD_DIR
             mv $TEMP_DIR $PROD_DIR
 
-            log_memory
-
-            echo ">>> Restarting PM2 process in production..."
+            echo ">>> Restarting PM2 process..."
             cd $PROD_DIR
             pm2 start "npm start" --name sunshine-cbd
-
-            log_memory
 
             echo ">>> Deployment complete!"
