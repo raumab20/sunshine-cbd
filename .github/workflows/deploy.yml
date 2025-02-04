@@ -26,15 +26,25 @@ jobs:
             echo ">>> Changed to directory:"
             pwd
 
+            echo ">>> Reset local changes..."
+            git reset --hard HEAD
+            git clean -fd
+
             echo ">>> Pulling latest code..."
             git pull origin dev
 
             echo ">>> Stopping PM2 processes..."
-            pm2 stop all
-            pm2 delete all
+            pm2 stop all || true
+            pm2 delete all || true
 
             echo ">>> Installing dependencies..."
             npm install
+
+            echo ">>> Checking .env.local file..."
+            if [ ! -f ".env.local" ]; then
+              echo "⚠️ .env.local not found! Copying from .env.example..."
+              cp .env.example .env.local
+            fi
 
             echo ">>> Running CI Pipeline..."
             if npm run ci:all; then
