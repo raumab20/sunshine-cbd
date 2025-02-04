@@ -43,12 +43,13 @@ async function runCIPipeline() {
 
     // Step 4: Run Cypress tests
     console.log("🧪 Running all Cypress tests...");
-    execSync("npm run test:cypress", { stdio: "inherit" });
-
-    console.log("✅✅✅ CI Pipeline successful.");
+  try {
+    execSync("CYPRESS_memory_limit=512 npx cypress run --max-workers=1 --headless --browser chrome --config video=false,screenshotOnRunFailure=false", { stdio: "inherit" });
   } catch (error) {
-    console.error("❌❌❌ CI Pipeline failed:", error.message);
+    console.error("❌ Cypress tests failed:", error.message);
     process.exit(1);
+  }
+
   } finally {
     // Stop the server and its entire process group
     if (serverProcess) {
