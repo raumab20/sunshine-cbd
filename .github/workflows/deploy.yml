@@ -1,89 +1,50 @@
 name: Deploy to Uberspace
 
 on:
-  push:
-    branches:
-      - dev
+ push:
+   branches:
+     - dev
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+ deploy:
+   runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+   steps:
+     - name: Checkout Repository
+       uses: actions/checkout@v3
 
-      - name: Deploy to Uberspace via SSH (sequentiell, speichersparend)
-        uses: appleboy/ssh-action@master
-        with:
-          host: horologium.uberspace.de
-          username: kasunshi
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            #!/bin/bash
-            # Wir verzichten bewusst auf "set -e", um Fehler gezielt behandeln zu können.
-            echo ">>> Adding ~/bin to PATH..."
-            export PATH=$PATH:~/bin
+     - name: Deploy to Uberspace via SSH
+       uses: appleboy/ssh-action@master
+       with:
+         host: horologium.uberspace.de
+         username: kasunshi
+         key: ${{ secrets.SSH_PRIVATE_KEY }}
+         script: |
+           echo ">>> Adding ~/bin to PATH..."
+           export PATH=$PATH:~/bin
+           cd ~/html/sunshine-cbd
+           echo ">>> Changed to directory:"
+           pwd
 
-            # Setze global das Memory-Limit für alle Node-Prozesse auf 512 MB
-            export NODE_OPTIONS="--max-old-space-size=512"
+           echo ">>> Pulling latest code..."
+           git pull origin dev
 
-            # Definiere Verzeichnisse
-            PROD_DIR=~/html/sunshine-cbd
-            TEMP_DIR=~/html/sunshine-cbd_temp
+           echo ">>> Stop the application..."
+           pm2 stop all
+           pm2 delete all
+          
+           echo ">>> Installing dependencies..."
+           npm install
+          
+           echo ">>> Building the project..."
+           # Wiederhole den Build-Prozess, falls er fehlschlägt
+           until NODE_OPTIONS="--max-old-space-size=512" npm run build --verbose; do
+             echo "Build failed, retrying in 5 seconds..."
 
-            echo ">>> Stopping current production (PM2)..."
-            pm2 stop all || true
-            pm2 delete all || true
-
-            echo ">>> Creating temporary directory..."
-            rm -rf $TEMP_DIR
-            mkdir -p $TEMP_DIR
-
-            echo ">>> Syncing current production state to TEMP_DIR..."
-            rsync -a --delete $PROD_DIR/ $TEMP_DIR/
-
-            echo ">>> Updating code in TEMP_DIR..."
-            cd $TEMP_DIR
-            git pull origin dev
-
-            echo ">>> Installing dependencies in TEMP_DIR..."
-            npm install
-
-            echo ">>> Loading local environment for testing..."
-            # Lade alle Variablen aus .env.local (Kommentare, Leerzeilen etc. sollten korrekt formatiert sein)
-            set -o allexport
-            source .env.local
-            set +o allexport
-
-            echo ">>> Running CI Pipeline tests in TEMP_DIR..."
-            # Hier wird deine komplette Test-Pipeline (z. B. Jest & Cypress) aufgerufen.
-            NODE_OPTIONS="--max-old-space-size=512" npm run ci:all || { echo "❌ CI tests failed! Aborting deployment."; exit 1; }
-
-            echo ">>> Clearing Next.js cache..."
-            rm -rf .next
-
-            echo ">>> Building the project in TEMP_DIR (retry until success)..."
-            ATTEMPTS=0
-            while true; do
-              echo ">>> Clearing Next.js cache before build..."
-              rm -rf .next
-              NODE_OPTIONS="--max-old-space-size=512" TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 npm run build:local --no-lint --no-check
-              if [ $? -eq 0 ]; then
-                echo "✅ Build successful in TEMP_DIR!"
-                break
-              fi
-              ATTEMPTS=$((ATTEMPTS+1))
-              echo "❌ Build failed (attempt ${ATTEMPTS}), retrying in 5 seconds..."
-              sleep 5
-            done
-
-            echo ">>> Replacing production with new build..."
-            rm -rf $PROD_DIR
-            mv $TEMP_DIR $PROD_DIR
-
-            echo ">>> Restarting PM2 process..."
-            cd $PROD_DIR
-            pm2 start "npm start" --name sunshine-cbd
-
-            echo ">>> Deployment complete!"
+             sleep 5
+           done
+          
+           echo ">>> Restarting PM2 process..."
+           pm2 start "npm start" --name sunshine-cbd
+          
+           echo ">>> Deployment complete!"
