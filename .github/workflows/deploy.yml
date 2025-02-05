@@ -1,4 +1,4 @@
-name: Deploy to Uberspace
+name: Test and Deploy to Uberspace
 
 on:
   push:
@@ -10,131 +10,86 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Deploy to Uberspace via SSH
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.UBERSPACE_HOST }}
-          username: ${{ secrets.UBERSPACE_USER }}
+          host: horologium.uberspace.de
+          username: kasunshi
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            #############################
-            # 1) Variablen definieren
-            #############################
-            TEST_DIR=~/html/sunshine-cbd-test        # "Test-Production"-Ordner
-            PROD_DIR=~/html/sunshine-cbd             # Produktions-Ordner
-            GIT_BRANCH=dev                           # Zu pullender Branch
-            REPO_URL="git@github.com:MEIN-USER/MEIN-REPO.git"  # anpassen!
-            NODE_OPTIONS="--max-old-space-size=512"  # Memory-Limit für Node-Prozesse
+            #!/bin/bash
+            set -e
 
-            echo ">>> Starte Deployment zu Uberspace ..."
+            echo ">>> Adding ~/bin to PATH..."
+            export PATH=$PATH:~/bin
 
-            #############################
-            # 2) Produktion beenden
-            #############################
-            echo ">>> PM2 stop all..."
+            PROD_DIR=~/html/sunshine-cbd
+            TEMP_DIR=~/html/sunshine-cbd_temp
+
+            echo ">>> Stopping current production (PM2)..."
             pm2 stop all || true
             pm2 delete all || true
 
-            #############################
-            # 3) Test-Folder vorbereiten
-            #############################
-            echo ">>> Test-Folder säubern & neu clonen..."
-            rm -rf $TEST_DIR
-            mkdir -p $TEST_DIR
+            echo ">>> Creating temporary directory..."
+            rm -rf $TEMP_DIR
+            mkdir -p $TEMP_DIR
 
-            git clone --branch $GIT_BRANCH $REPO_URL $TEST_DIR
+            echo ">>> Syncing current production state to TEMP_DIR..."
+            rsync -a --delete $PROD_DIR/ $TEMP_DIR/
 
-            cd $TEST_DIR
-            echo ">>> Aktuelles Verzeichnis: $(pwd)"
+            echo ">>> Updating code in TEMP_DIR..."
+            cd $TEMP_DIR
+            git pull origin dev
 
-            #############################
-            # 4) ENV für Tests (lokal)
-            #############################
-            # Hier stellst du sicher, dass nur deine local-ENV aktiv ist.
-            # Du kannst dafür z.B. eine .env.local in $TEST_DIR kopieren/verwenden
-            # oder manuell exportieren:
-            echo ">>> Setze lokale ENV-Variablen (Test-Umgebung)..."
-            export AUTH_SECRET="CQHoKMoqgfBBR6N4Wcp57rjf0WFrzxPMJIZhrGaKTkc="
-            export DATABASE_URL="mongodb+srv://sunshine:PASSWORT@cluster0.kes1s.mongodb.net/sunshine-cbd?retryWrites=true&w=majority&appName=Cluster0&maxpoolsize=5"
-            export AUTH_GITHUB_ID="Ov23liizIYE6mHNOvUld"
-            export AUTH_GITHUB_SECRET="3748762bae3475ee22dab9b8553b65cb63cb8cf6"
-            export NEXTAUTH_SECRET=$AUTH_SECRET
-            export NEXT_PUBLIC_API_URL="http://localhost:45620"
-            export PORT=45620
+            echo ">>> Installing dependencies..."
+            npm install
 
-            #############################
-            # 5) Dependencies & Build (Test-Ordner)
-            #############################
-            echo ">>> Installiere Abhängigkeiten (Test-Folder)..."
-            $NODE_OPTIONS npm install
+            echo ">>> Running tests in TEMP_DIR..."
+            export NODE_OPTIONS="--max-old-space-size=1024"
+            npm run ci:all || TEST_FAILED=true
 
-            echo ">>> Baue das Projekt (Test-Folder)..."
-            until $NODE_OPTIONS npm run build --verbose; do
-              echo "Build fehlgeschlagen, versuche erneut in 5s..."
+            echo ">>> Clearing Next.js cache..."
+            rm -rf .next
+
+            echo ">>> Building the project with retry on failure..."
+            ATTEMPTS=0
+            while [ $ATTEMPTS -lt 5 ]; do
+              export NODE_ENV=production
+              export NODE_OPTIONS="--max-old-space-size=1024"
+              export NEXT_DISABLE_CACHE=1
+              export NEXT_STATIC_EXPORT=1
+              TURBO_FORCE=1 npm run build --no-lint --no-check
+              if [ $? -eq 0 ]; then
+                echo "✅ Build successful!"
+                break
+              fi
+              echo "❌ Build failed, retrying in 5 seconds..."
+              ATTEMPTS=$((ATTEMPTS+1))
               sleep 5
             done
 
-            #############################
-            # 6) Tests ausführen (Jest + Cypress)
-            #############################
-            # CI-Pipeline: start dev + test
-            echo ">>> Starte Tests über npm run ci:all..."
-            set +e
-            $NODE_OPTIONS npm run ci:all
-            TEST_EXIT_CODE=$?
-            set -e
-
-            if [ $TEST_EXIT_CODE -eq 0 ]; then
-              echo ">>> Tests erfolgreich! -> Production wird aktualisiert..."
-
-              # Test-Folder kann entfernt werden
-              cd ~
-              rm -rf $TEST_DIR
-
-              #############################
-              # 7) Production-Update
-              #############################
-              cd $PROD_DIR
-              echo ">>> Pull aus dev (Production-Folder)..."
-              git pull origin $GIT_BRANCH
-
-              # ENV für Production
-              echo ">>> Setze Production-ENV..."
-              export NEXT_PUBLIC_API_URL="http://horologium.uberspace.de:45620/"
-              export AUTH_SECRET="CQHoKMoqgfBBR6N4Wcp57rjf0WFrzxPMJIZhrGaKTkc="
-              export DATABASE_URL="mongodb+srv://sunshine:PASSWORT@cluster0.kes1s.mongodb.net/sunshine-cbd?retryWrites=true&w=majority&appName=Cluster0&maxpoolsize=5"
-              export AUTH_GITHUB_ID="Ov23liizIYE6mHNOvUld"
-              export AUTH_GITHUB_SECRET="3748762bae3475ee22dab9b8553b65cb63cb8cf6"
-              export NEXTAUTH_SECRET=$AUTH_SECRET
-              export NEXTAUTH_URL="http://horologium.uberspace.de:45620"
-              # ggf. PORT=45620, wenn du es hier ebenso benutzen willst.
-
-              echo ">>> Install Dependencies (Prod-Folder)..."
-              $NODE_OPTIONS npm install
-
-              echo ">>> Build Production..."
-              until $NODE_OPTIONS npm run build --verbose; do
-                echo "Prod-Build fehlgeschlagen, retry in 5s..."
-                sleep 5
-              done
-
-              echo ">>> PM2 Start Production..."
-              pm2 start "npm start" --name sunshine-cbd --max-memory-restart 512M
-
-              echo ">>> Deployment SUCCESS."
-            else
-              echo ">>> Tests FEHLGESCHLAGEN! -> Alte Production bleibt..."
-
-              cd ~
-              rm -rf $TEST_DIR
-
-              echo ">>> Starte wieder PM2 mit altem Code..."
-              cd $PROD_DIR
-              pm2 start "npm start" --name sunshine-cbd --max-memory-restart 512M
-
-              echo ">>> Deployment abgebrochen (Testfehler)."
+            if [ $ATTEMPTS -ge 5 ]; then
+              echo "❌ Build failed after 5 attempts. Exiting..."
               exit 1
             fi
+
+            if [ "$TEST_FAILED" = "true" ]; then
+              echo "❌ Tests failed! Deployment aborted."
+              rm -rf $TEMP_DIR
+              cd $PROD_DIR
+              pm2 start "npm start" --name sunshine-cbd
+              exit 1
+            fi
+
+            echo ">>> Deployment successful! Swapping to production..."
+            rm -rf $PROD_DIR
+            mv $TEMP_DIR $PROD_DIR
+
+            echo ">>> Restarting PM2 process..."
+            cd $PROD_DIR
+            pm2 start "npm start" --name sunshine-cbd
+
+            echo ">>> Deployment complete!"
