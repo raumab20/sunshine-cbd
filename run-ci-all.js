@@ -9,14 +9,14 @@ async function runCIPipeline() {
   try {
     // Step 1: Build process (retry up to 5 times)
     console.log("🏗️ Building the project...");
-    while (attempts < 5) {
+    while (attempts < 20) {
       try {
-        execSync("NODE_ENV=production NODE_OPTIONS='--max-old-space-size=1024' TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 NEXT_STATIC_EXPORT=1 npm run build --no-lint --no-check", { stdio: "inherit" });
+        execSync("NODE_ENV=production NODE_OPTIONS='--max-old-space-size=512' TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 NEXT_STATIC_EXPORT=1 npm run build --no-lint --no-check", { stdio: "inherit" });
         console.log("✅ Build successful!");
         break;
       } catch (error) {
         attempts++;
-        console.error(`❌ Build failed (attempt ${attempts}/5), retrying in 5 seconds...`);
+        console.error(`❌ Build failed (attempt ${attempts}/20), retrying in 5 seconds...`);
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
