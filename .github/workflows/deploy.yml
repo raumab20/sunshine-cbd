@@ -22,43 +22,43 @@ jobs:
           script: |
             #!/bin/bash
             set -e
-          
+
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
-          
+
             PROD_DIR=~/html/sunshine-cbd
             TEMP_DIR=~/html/sunshine-cbd_temp
-          
+
             echo ">>> Stopping current production (PM2)..."
             pm2 stop all || true
             pm2 delete all || true
-          
+
             echo ">>> Creating temporary directory..."
             rm -rf $TEMP_DIR
             mkdir -p $TEMP_DIR
-          
+
             echo ">>> Syncing current production state to TEMP_DIR..."
             rsync -a --delete $PROD_DIR/ $TEMP_DIR/
-          
+
             echo ">>> Updating code in TEMP_DIR..."
             cd $TEMP_DIR
             git pull origin dev
-          
+
             echo ">>> Installing dependencies..."
             npm install
-          
+
             echo ">>> Running tests in TEMP_DIR..."
-            export NODE_OPTIONS="--max-old-space-size=2048"
+            export NODE_OPTIONS="--max-old-space-size=1024"
             npm run ci:all || TEST_FAILED=true
-          
+
             echo ">>> Clearing Next.js cache..."
             rm -rf .next
-          
+
             echo ">>> Building the project with retry on failure..."
             ATTEMPTS=0
             while [ $ATTEMPTS -lt 5 ]; do
               export NODE_ENV=production
-              export NODE_OPTIONS="--max-old-space-size=2048"
+              export NODE_OPTIONS="--max-old-space-size=1024"
               export NEXT_DISABLE_CACHE=1
               export NEXT_STATIC_EXPORT=1
               TURBO_FORCE=1 npm run build --no-lint --no-check
@@ -70,12 +70,12 @@ jobs:
               ATTEMPTS=$((ATTEMPTS+1))
               sleep 5
             done
-          
+
             if [ $ATTEMPTS -ge 5 ]; then
               echo "❌ Build failed after 5 attempts. Exiting..."
               exit 1
             fi
-          
+
             if [ "$TEST_FAILED" = "true" ]; then
               echo "❌ Tests failed! Deployment aborted."
               rm -rf $TEMP_DIR
@@ -83,13 +83,13 @@ jobs:
               pm2 start "npm start" --name sunshine-cbd
               exit 1
             fi
-          
+
             echo ">>> Deployment successful! Swapping to production..."
             rm -rf $PROD_DIR
             mv $TEMP_DIR $PROD_DIR
-          
+
             echo ">>> Restarting PM2 process..."
             cd $PROD_DIR
             pm2 start "npm start" --name sunshine-cbd
-          
+
             echo ">>> Deployment complete!"
