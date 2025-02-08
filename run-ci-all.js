@@ -11,7 +11,7 @@ async function runCIPipeline() {
     console.log("🏗️ Building the project...");
     while (attempts < 20) {
       try {
-        execSync("NODE_ENV=production NODE_OPTIONS='--max-old-space-size=512' TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 NEXT_STATIC_EXPORT=1 npm run build --no-lint --no-check", { stdio: "inherit" });
+        execSync("NODE_ENV=production NODE_OPTIONS='--max-old-space-size=1024' TURBO_FORCE=1 NEXT_DISABLE_CACHE=1 NEXT_STATIC_EXPORT=1 npm run build --no-lint --no-check", { stdio: "inherit" });
         console.log("✅ Build successful!");
         break;
       } catch (error) {
