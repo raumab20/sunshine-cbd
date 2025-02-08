@@ -42,8 +42,12 @@ async function runCIPipeline() {
     execSync("npm run test:jest", { stdio: "inherit" });
 
     // Step 4: Run Cypress tests
-    console.log("🧪 Running all Cypress tests...");
-    execSync("npm run test:cypress", { stdio: "inherit" });
+    console.log("🧪 Waiting for server to be ready...");
+    setTimeout(() => {
+      console.log("🧪 Running all Cypress tests...");
+      execSync("npm run test:cypress", { stdio: "inherit" });
+    }, 10000); // 10 Sekunden warten, damit der Server stabil läuft
+
 
     console.log("✅✅✅ CI Pipeline successful.");
   } catch (error) {

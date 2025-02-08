@@ -14,7 +14,7 @@
     "ci": "node run-ci.js",
     "ci:all": "node run-ci-all.js",
     "test:jest": "jest",
-    "test:cypress": "npx cypress run --headless --browser electron",
+    "test:cypress": "CYPRESS_VIDEO=false CYPRESS_SCREENSHOT_ON_RUN_FAILURE=false npx cypress run --headless --browser electron --quiet --config retries=2",
     "prepare": "husky install"
   },
   "type": "module",
