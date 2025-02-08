@@ -44,15 +44,15 @@ jobs:
             cd $TEMP_DIR
             git pull origin dev
 
-            echo ">>> Installing dependencies..."
-            npm install
-
             echo ">>> Running tests in TEMP_DIR..."
             export NODE_OPTIONS="--max-old-space-size=1024"
             npm run ci:all || TEST_FAILED=true
 
             echo ">>> Clearing Next.js cache..."
             rm -rf .next
+
+            echo ">>> Installing dependencies..."
+            npm install
 
             echo ">>> Building the project with retry on failure..."
             ATTEMPTS=0
