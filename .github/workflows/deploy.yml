@@ -64,4 +64,4 @@ jobs:
             cd $PROD_DIR
             pm2 start "npm start" --name sunshine-cbd
 
-            echo ">>> Deployment complete!"
+            echo ">>> Deployment complete!" 
