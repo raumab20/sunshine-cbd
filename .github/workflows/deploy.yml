@@ -60,8 +60,14 @@ jobs:
             rm -rf $PROD_DIR
             mv $TEMP_DIR $PROD_DIR
 
-            echo ">>> Restarting PM2 process..."
+            echo ">>> Installing dependencies..."
             cd $PROD_DIR
+            npm install
+
+            echo ">>> Building production bundle..."
+            NODE_OPTIONS='--max-old-space-size=1536' npm run build
+
+            echo ">>> Restarting PM2 process..."
             pm2 start "npm start" --name sunshine-cbd
 
             echo ">>> Deployment complete!" 
