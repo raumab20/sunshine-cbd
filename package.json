@@ -14,7 +14,7 @@
     "ci": "node run-ci.js",
     "ci:all": "node run-ci-all.js",
     "test:jest": "jest",
-    "test:cypress": "cypress run",
+    "test:cypress": "npx cypress run --headless --browser chrome",
     "prepare": "husky install"
   },
   "type": "module",
