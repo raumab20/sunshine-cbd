@@ -30,8 +30,8 @@ jobs:
             TEMP_DIR=~/html/sunshine-cbd_temp
 
             echo ">>> Stopping current production (PM2)..."
-            pm2 stop all || true
-            pm2 delete all || true
+            pm2 stop sunshine-cbd || true
+            pm2 delete sunshine-cbd || true
 
             echo ">>> Creating temporary directory..."
             rm -rf $TEMP_DIR
@@ -46,13 +46,21 @@ jobs:
 
             echo ">>> Running tests in TEMP_DIR..."
             export NODE_OPTIONS="--max-old-space-size=1024"
+            npm install
             npm run ci:all || TEST_FAILED=true
 
             if [ "$TEST_FAILED" = "true" ]; then
-              echo "❌ Tests failed! Deployment aborted."
+              echo "❌ Tests failed! Rolling back to previous version..."
               rm -rf $TEMP_DIR
               cd $PROD_DIR
+
+              echo ">>> Reinstalling dependencies in PROD_DIR..."
+              npm install
+              npm run build
+
+              echo ">>> Restarting PM2 process with previous version..."
               pm2 start "npm start" --name sunshine-cbd
+              pm2 save  # Speichert den Prozess für Neustarts
               exit 1
             fi
 
@@ -61,7 +69,8 @@ jobs:
             mv $TEMP_DIR $PROD_DIR
 
             cd $PROD_DIR
-            echo ">>> Restarting PM2 process..."
+            echo ">>> Restarting PM2 process with new version..."
             pm2 start "npm start" --name sunshine-cbd
+            pm2 save
 
-            echo ">>> Deployment complete!" 
+            echo ">>> Deployment complete!"
