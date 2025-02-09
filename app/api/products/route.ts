@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     if (minPrice || maxPrice) {
       whereClause.price = {};
       if (minPrice) whereClause.price.gte = parseFloat(minPrice);
-      if (maxPrice) whereClause.price.lte = parseFloat(maxPrice);
+      if (maxPrice) whereClause.price.lte = parseFloat(maxPrice) + 50;
     }
 
     const orderBy: Record<string, any> = {};
