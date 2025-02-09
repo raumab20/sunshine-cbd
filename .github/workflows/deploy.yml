@@ -57,6 +57,7 @@ jobs:
 
               echo ">>> Reinstalling dependencies in PROD_DIR..."
               npm install
+              export NODE_OPTIONS="--max-old-space-size=1024"
               npm run build
 
               echo ">>> Restarting PM2 process with previous version..."
