@@ -29,9 +29,11 @@ jobs:
             PROD_DIR=~/html/sunshine-cbd
             TEMP_DIR=~/html/sunshine-cbd_temp
 
+            cd $PROD_DIR
+
             echo ">>> Stopping current production (PM2)..."
-            pm2 stop sunshine-cbd || true
-            pm2 delete sunshine-cbd || true
+            pm2 stop all || true
+            pm2 delete all || true
 
             echo ">>> Creating temporary directory..."
             rm -rf $TEMP_DIR
@@ -46,7 +48,6 @@ jobs:
 
             echo ">>> Running tests in TEMP_DIR..."
             export NODE_OPTIONS="--max-old-space-size=1024"
-            npm install
             npm run ci:all || TEST_FAILED=true
 
             if [ "$TEST_FAILED" = "true" ]; then
