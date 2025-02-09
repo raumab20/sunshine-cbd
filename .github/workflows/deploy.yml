@@ -62,7 +62,6 @@ jobs:
 
               echo ">>> Restarting PM2 process with previous version..."
               pm2 start "npm start" --name sunshine-cbd
-              pm2 save  # Speichert den Prozess für Neustarts
               exit 1
             fi
 
@@ -79,6 +78,5 @@ jobs:
 
             echo ">>> Restarting PM2 process with new version..."
             pm2 start "npm start" --name sunshine-cbd
-            pm2 save
 
             echo ">>> Deployment complete!"
