@@ -71,6 +71,12 @@ jobs:
             mv $TEMP_DIR $PROD_DIR
 
             cd $PROD_DIR
+
+            echo ">>> Reinstalling dependencies in PROD_DIR..."
+            npm install
+            export NODE_OPTIONS="--max-old-space-size=1024"
+            npm run build
+
             echo ">>> Restarting PM2 process with new version..."
             pm2 start "npm start" --name sunshine-cbd
             pm2 save
