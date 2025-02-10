@@ -1,4 +1,4 @@
-name: Deploy to Uberspace
+name: Test and Deploy to Uberspace
 
 on:
   push:
@@ -20,31 +20,63 @@ jobs:
           username: kasunshi
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            #!/bin/bash
+            set -e
+
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
-            cd ~/html/sunshine-cbd
-            echo ">>> Changed to directory:"
-            pwd
 
-            echo ">>> Pulling latest code..."
+            PROD_DIR=~/html/sunshine-cbd
+            TEMP_DIR=~/html/sunshine-cbd_temp
+
+            cd $PROD_DIR
+
+            echo ">>> Stopping current production (PM2)..."
+            pm2 stop all || true
+            pm2 delete all || true
+
+            echo ">>> Creating temporary directory..."
+            rm -rf $TEMP_DIR
+            mkdir -p $TEMP_DIR
+
+            echo ">>> Syncing current production state to TEMP_DIR..."
+            rsync -a --delete $PROD_DIR/ $TEMP_DIR/
+
+            echo ">>> Updating code in TEMP_DIR..."
+            cd $TEMP_DIR
             git pull origin dev
 
-            echo ">>> Stop the application..."
-            pm2 stop all
-            pm2 delete all
-            
-            echo ">>> Installing dependencies..."
-            npm install
-            
-            echo ">>> Building the project..."
-            # Wiederhole den Build-Prozess, falls er fehlschlägt
-            until NODE_OPTIONS="--max-old-space-size=512" npm run build --verbose; do
-              echo "Build failed, retrying in 5 seconds..."
+            echo ">>> Running tests in TEMP_DIR..."
+            export NODE_OPTIONS="--max-old-space-size=1024"
+            npm run ci:all || TEST_FAILED=true
 
-              sleep 5
-            done
-            
-            echo ">>> Restarting PM2 process..."
+            if [ "$TEST_FAILED" = "true" ]; then
+              echo "❌ Tests failed! Rolling back to previous version..."
+              rm -rf $TEMP_DIR
+              cd $PROD_DIR
+
+              echo ">>> Reinstalling dependencies in PROD_DIR..."
+              npm install
+              export NODE_OPTIONS="--max-old-space-size=1024"
+              npm run build
+
+              echo ">>> Restarting PM2 process with previous version..."
+              pm2 start "npm start" --name sunshine-cbd
+              exit 1
+            fi
+
+            echo ">>> Deployment successful! Swapping to production..."
+            rm -rf $PROD_DIR
+            mv $TEMP_DIR $PROD_DIR
+
+            cd $PROD_DIR
+
+            echo ">>> Reinstalling dependencies in PROD_DIR..."
+            npm install
+            export NODE_OPTIONS="--max-old-space-size=1024"
+            npm run build
+
+            echo ">>> Restarting PM2 process with new version..."
             pm2 start "npm start" --name sunshine-cbd
-            
+
             echo ">>> Deployment complete!"

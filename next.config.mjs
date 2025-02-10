@@ -1,4 +1,4 @@
-const nextConfig = {
+export default {
   webpack: (config) => {
     config.module.rules.push({
       test: /\.mjs$/,
@@ -8,9 +8,15 @@ const nextConfig = {
     return config;
   },
   typescript: {
-    // Ignoriert TypeScript-Fehler während des Builds
     ignoreBuildErrors: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  productionBrowserSourceMaps: false,
+  experimental: {
+    workerThreads: false,
+    cpus: 1,
+  },
+  output: 'standalone',
 };
-
-export default nextConfig;
