@@ -15,6 +15,40 @@ async function getUser(session: { user?: { email?: string } }) {
   return user;
 }
 
+export async function GET(req: NextRequest) {
+  try {
+    const session = req.headers.get("authorization"); // Session aus Header holen
+    if (!session) {
+      return NextResponse.json({ error: "Nicht authentifiziert" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session }, // User anhand der Session-E-Mail finden
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "Benutzer nicht gefunden" }, { status: 404 });
+    }
+
+    const cart = await prisma.cart.findFirst({
+      where: { userId: user.id },
+    });
+
+    if (!cart) {
+      return NextResponse.json({ items: [] }); // Falls kein Warenkorb existiert
+    }
+
+    const cartItems = await prisma.cartItem.findMany({
+      where: { cartId: cart.id },
+    });
+
+    return NextResponse.json({ items: cartItems });
+  } catch (error) {
+    console.error("Fehler beim Abrufen des Warenkorbs:", error);
+    return NextResponse.json({ error: "Fehler beim Abrufen des Warenkorbs" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { session } = await req.json();

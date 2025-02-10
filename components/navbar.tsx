@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LogoutButton from "./LogoutButton";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, FileText } from "lucide-react";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -23,10 +23,16 @@ export default function Navbar() {
           <span className="text-xl font-bold">Sunshine</span>
         </Link>
         <div className="flex items-center space-x-4">
-          {session?.user && (
-            <Link href="/cart">
-              <ShoppingCart className="h-6 w-6 text-white" />
-            </Link>
+        {session?.user && (
+            <>
+              <Link href="/cart">
+                <ShoppingCart className="h-6 w-6 text-white" />
+              </Link>
+
+              <Link href="/orders">
+                <FileText className="h-6 w-6 text-white" />
+              </Link>
+            </>
           )}
           {session?.user ? (
             <DropdownMenu>

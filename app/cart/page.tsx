@@ -17,11 +17,11 @@ const CartPage: NextPage = () => {
       setLoading(false);
       return;
     }
-  
+
     setLoading(true);
     const baseUrl = process.env.NEXT_PUBLIC_API_URL as string;
     const url = new URL(`${baseUrl}/api/cart`);
-  
+
     try {
       const res = await fetch(url.toString(), {
         method: "POST",
@@ -30,11 +30,11 @@ const CartPage: NextPage = () => {
         },
         body: JSON.stringify({ session }),
       });
-  
+
       if (!res.ok) {
         throw new Error(`Failed to fetch cart: ${res.status}`);
       }
-  
+
       const data = await res.json();
       setCart(data);
     } catch (error) {
@@ -44,7 +44,7 @@ const CartPage: NextPage = () => {
       setLoading(false);
     }
   }, [session]);
-  
+
   useEffect(() => {
     if (session && status === "authenticated") {
       fetchCart();
@@ -142,60 +142,60 @@ const CartPage: NextPage = () => {
       </h1>
       <ul className="space-y-4">
 
-      {cart.map((item) => {
-        if (!item.product) {
-          console.warn("Item with missing product data:", item);
-          return null;
-        }
+        {cart.map((item) => {
+          if (!item.product) {
+            console.warn("Item with missing product data:", item);
+            return null;
+          }
 
-        return (
-          <li
-            key={item.id}
-            className="flex items-center justify-between border-b border-gray-700 pb-4"
-          >
-            <Image
-              src={item.product.image}
-              alt={item.product.name}
-              width={64} // Adjust as needed
-              height={64} // Adjust as needed
-              className="rounded-md"
-            />
-            <div className="flex-1 ml-4">
-              <h2 className="text-lg font-semibold text-gray-100">
-                {item.product.name}
-              </h2>
-              <p className="text-sm text-gray-400">{item.product.category}</p>
-              <p className="font-bold mt-1 text-gray-200">
-                {item.product.price.toFixed(2)} €
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                className="px-2 py-1 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
-              >
-                -
-              </button>
-              <span className="px-3 text-lg text-gray-100">{item.quantity}</span>
-              <button
-                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                className="px-2 py-1 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
-              >
-                +
-              </button>
-            </div>
-            <p className="ml-6 font-semibold text-gray-100">
-              {(item.product.price * item.quantity).toFixed(2)} €
-            </p>
-            <button
-              onClick={() => deleteCartItem(item.id)}
-              className="ml-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-500"
+          return (
+            <li
+              key={item.id}
+              className="flex items-center justify-between border-b border-gray-700 pb-4"
             >
-              Delete
-            </button>
-          </li>
-        );
-      })}
+              <Image
+                src={item.product.image}
+                alt={item.product.name}
+                width={64} // Adjust as needed
+                height={64} // Adjust as needed
+                className="rounded-md"
+              />
+              <div className="flex-1 ml-4">
+                <h2 className="text-lg font-semibold text-gray-100">
+                  {item.product.name}
+                </h2>
+                <p className="text-sm text-gray-400">{item.product.category}</p>
+                <p className="font-bold mt-1 text-gray-200">
+                  {item.product.price.toFixed(2)} €
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                  className="px-2 py-1 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+                >
+                  -
+                </button>
+                <span className="px-3 text-lg text-gray-100">{item.quantity}</span>
+                <button
+                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                  className="px-2 py-1 bg-gray-700 text-gray-100 rounded hover:bg-gray-600"
+                >
+                  +
+                </button>
+              </div>
+              <p className="ml-6 font-semibold text-gray-100">
+                {(item.product.price * item.quantity).toFixed(2)} €
+              </p>
+              <button
+                onClick={() => deleteCartItem(item.id)}
+                className="ml-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-500"
+              >
+                Delete
+              </button>
+            </li>
+          );
+        })}
 
       </ul>
       <div className="flex items-center justify-between mt-8 border-t border-gray-700 pt-4">
@@ -208,7 +208,14 @@ const CartPage: NextPage = () => {
         <span className="text-xl font-bold text-gray-100">
           Total Price: {calculateTotalPrice()} €
         </span>
+        <Link
+          href="/checkout"
+          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-500 text-center"
+        >
+          Proceed to Checkout
+        </Link>
       </div>
+
     </div>
   );
 };
