@@ -97,7 +97,7 @@ describe("Product Page E2E Tests", () => {
     cy.get('div[role="option"]', { timeout: 5000 })
       .contains("Price (Low to High)")
       .click({ force: true });
-    cy.wait(3000); // Warte nach dem Sortieren
+    cy.wait(3000);
     cy.get(".product-card .price", { timeout: 5000 }).then(($prices) => {
       const priceValues = [...$prices].map((price) =>
         parseFloat(price.innerText.replace("$", ""))
@@ -116,7 +116,7 @@ describe("Product Page E2E Tests", () => {
     cy.get('div[role="option"]', { timeout: 5000 })
       .contains("Price (High to Low)")
       .click({ force: true });
-    cy.wait(3000); // Warte nach dem Sortieren
+    cy.wait(3000);
     cy.get(".product-card .price", { timeout: 5000 }).then(($prices) => {
       const priceValues = [...$prices].map((price) =>
         parseFloat(price.innerText.replace("$", ""))

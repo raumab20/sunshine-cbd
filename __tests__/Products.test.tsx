@@ -82,46 +82,87 @@ afterAll(() => {
 
 describe("Webshop API Tests - Kernfunktionalität", () => {
   // Test für gefilterte Kategorie
-  test("should return products filtered by category", async () => {
+  test("should return products filtered by category (manual double-check)", async () => {
+    const allResponse = await request(server).get("/api/products");
+    expect(allResponse.status).toBe(200);
+    const allProducts = allResponse.body;
+
+    const expectedProducts = allProducts.filter(
+      (product: any) => product.category === "Oils"
+    );
+
     const response = await request(server).get("/api/products?category=Oils");
     expect(response.status).toBe(200);
-    expect(response.body.length).toBe(1); // Wir erwarten nur 1 Produkt in der Kategorie "Oils"
-    expect(response.body[0].category).toBe("Oils");
+
+    expect(response.body.length).toBe(expectedProducts.length);
+
+    response.body.forEach((product: any) => {
+      expect(product.category).toBe("Oils");
+    });
   });
 
   // Test für gefilterten Preisbereich
-  test("should return products filtered by price range", async () => {
+  test("should return products filtered by price range (manual double-check)", async () => {
+    const allResponse = await request(server).get("/api/products");
+    expect(allResponse.status).toBe(200);
+    const allProducts = allResponse.body;
+
+    const expectedProducts = allProducts.filter(
+      (product: any) => product.price >= 20 && product.price <= 30
+    );
+
     const response = await request(server).get(
       "/api/products?minPrice=20&maxPrice=30"
     );
     expect(response.status).toBe(200);
-    expect(response.body.length).toBe(2); // 2 Produkte zwischen 20 und 30 Euro
-    expect(
-      response.body.every((p: any) => p.price >= 20 && p.price <= 30)
-    ).toBeTruthy();
+
+    expect(response.body.length).toBe(expectedProducts.length);
+
+    response.body.forEach((product: any) => {
+      expect(product.price).toBeGreaterThanOrEqual(20);
+      expect(product.price).toBeLessThanOrEqual(30);
+    });
   });
 
   // Test für Sortierung aufsteigend
-  test("should return products sorted by price ascending", async () => {
+  test("should return products sorted by price ascending (manual double-check)", async () => {
+    const allResponse = await request(server).get("/api/products");
+    expect(allResponse.status).toBe(200);
+    const allProducts = allResponse.body;
+
+    const expectedProducts = [...allProducts].sort((a, b) => a.price - b.price);
+
     const response = await request(server).get(
       "/api/products?sortBy=price&sortOrder=asc"
     );
     expect(response.status).toBe(200);
 
-    const prices = response.body.map((p: any) => p.price);
-    const sortedPrices = [...prices].sort((a: number, b: number) => a - b);
-    expect(prices).toEqual(sortedPrices);
+    expect(response.body.length).toBe(expectedProducts.length);
+
+    const sortedPrices = response.body.map((p) => p.price);
+    const expectedPrices = expectedProducts.map((p) => p.price);
+
+    expect(sortedPrices).toEqual(expectedPrices);
   });
 
   // Test für Sortierung absteigend
-  test("should return products sorted by price descending", async () => {
+  test("should return products sorted by price descending (manual double-check)", async () => {
+    const allResponse = await request(server).get("/api/products");
+    expect(allResponse.status).toBe(200);
+    const allProducts = allResponse.body;
+
+    const expectedProducts = [...allProducts].sort((a, b) => b.price - a.price);
+
     const response = await request(server).get(
       "/api/products?sortBy=price&sortOrder=desc"
     );
     expect(response.status).toBe(200);
 
-    const prices = response.body.map((p: any) => p.price);
-    const sortedPrices = [...prices].sort((a: number, b: number) => b - a);
-    expect(prices).toEqual(sortedPrices);
+    expect(response.body.length).toBe(expectedProducts.length);
+
+    const sortedPrices = response.body.map((p) => p.price);
+    const expectedPrices = expectedProducts.map((p) => p.price);
+
+    expect(sortedPrices).toEqual(expectedPrices);
   });
 });
