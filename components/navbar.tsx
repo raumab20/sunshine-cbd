@@ -20,10 +20,10 @@ export default function Navbar() {
     <nav className="bg-background">
       <div className="flex h-16 items-center justify-between mx-4">
         <Link href="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold">Sunshine</span>
+          <span className="text-xl font-bold">Sunshine CBD</span>
         </Link>
         <div className="flex items-center space-x-4">
-        {session?.user && (
+          {session?.user && (
             <>
               <Link href="/cart">
                 <ShoppingCart className="h-6 w-6 text-white" />
