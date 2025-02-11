@@ -58,7 +58,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           height={100}
           className="w-full h-full object-contain"
         />
-        <div className="absolute top-0 right-0 bg-yellow-600 text-gray-900 px-2 py-1 m-2 rounded-md text-sm font-semibold flex items-center">
+        <div
+          className="absolute top-0 right-0 bg-yellow-600 text-gray-900 px-2 py-1 m-2 rounded-md text-sm font-semibold flex items-center"
+          data-testid="product-category" // Hinzugefügt für Tests
+        >
           <Sun className="mr-1 h-4 w-4" />
           {product.category}
         </div>
