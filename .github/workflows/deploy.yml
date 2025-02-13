@@ -44,7 +44,16 @@ jobs:
 
             echo ">>> Updating code in TEMP_DIR..."
             cd $TEMP_DIR
+            git fetch --all
+            git reset --hard origin/dev
+            git clean -fd
             git pull origin dev
+
+            echo ">>> Ensuring .env files exist..."
+            if [ ! -f ".env" ] || [ ! -f ".env.local" ]; then
+              echo "⚠️ .env or .env.local missing! Restoring from repo..."
+              git checkout -- .env .env.local
+            fi
 
             echo ">>> Running tests in TEMP_DIR..."
             export NODE_OPTIONS="--max-old-space-size=1024"
@@ -66,13 +75,16 @@ jobs:
               exit 1
             fi
 
-            echo ">>> Deployment successful! Swapping to production..."
+            echo ">>> Tests successful! Preparing for deployment..."
+            rm -rf .env .env.local
+            mv .env.production .env  # Setze die Production-Umgebung
+
+            echo ">>> Swapping to production..."
             rm -rf $PROD_DIR
             mv $TEMP_DIR $PROD_DIR
 
             cd $PROD_DIR
-            rm -rf .env .env.local
-            
+
             echo ">>> Reinstalling dependencies in PROD_DIR..."
             npm install
             export NODE_OPTIONS="--max-old-space-size=1024"
