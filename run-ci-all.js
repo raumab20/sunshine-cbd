@@ -36,7 +36,7 @@ async function runCIPipeline() {
 
   try {
     // Step 0: Install dependencies
-    execSync("npm install", { stdio: "inherit" });
+    execSync("npm i", { stdio: "inherit" });
 
     // Step 1: Build process (retry up to 5 times)
     console.log("🏗️ Building the project...");

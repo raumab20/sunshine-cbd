@@ -54,6 +54,7 @@ jobs:
               echo "❌ Tests failed! Rolling back to previous version..."
               rm -rf $TEMP_DIR
               cd $PROD_DIR
+              rm -rf .env .env.local
 
               echo ">>> Reinstalling dependencies in PROD_DIR..."
               npm install
@@ -70,7 +71,8 @@ jobs:
             mv $TEMP_DIR $PROD_DIR
 
             cd $PROD_DIR
-
+            rm -rf .env .env.local
+            
             echo ">>> Reinstalling dependencies in PROD_DIR..."
             npm install
             export NODE_OPTIONS="--max-old-space-size=1024"
