@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image"; // Importiere Image
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,7 +21,8 @@ export default function Navbar() {
     <nav className="bg-background">
       <div className="flex h-16 items-center justify-between mx-4">
         <Link href="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold">Sunshine</span>
+          <Image src="/logo.png" alt="Logo" width={40} height={40} className="h-10 w-auto" /> 
+          <span className="text-xl font-bold">SunshineCBD</span>
         </Link>
         <div className="flex items-center space-x-4">
           {session?.user && (
