@@ -93,5 +93,4 @@ jobs:
             echo ">>> Restarting PM2 process with new version..."
             pm2 start "npm start" --name sunshine-cbd
 
-            //Testing Deployment
             echo ">>> Deployment complete!"
