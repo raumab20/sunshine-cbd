@@ -63,7 +63,7 @@ jobs:
               echo "❌ Tests failed! Rolling back to previous version..."
               rm -rf $TEMP_DIR
               cd $PROD_DIR
-              rm -rf .env .env.local
+              rm -rf .env .env.local 
 
               echo ">>> Reinstalling dependencies in PROD_DIR..."
               npm install
@@ -93,4 +93,5 @@ jobs:
             echo ">>> Restarting PM2 process with new version..."
             pm2 start "npm start" --name sunshine-cbd
 
+            //Testing Deployment
             echo ">>> Deployment complete!"
