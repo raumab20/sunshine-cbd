@@ -61,8 +61,8 @@ async function runCIPipeline() {
     console.log("🔄 Starting the server...");
     serverProcess = spawn("npm", ["run", "dev"], {
       detached: false,
-      stdio: "inherit"
-    });    
+      stdio: ["ignore", fs.openSync("./server.stdout.log", "a"), fs.openSync("./server.stderr.log", "a")]
+    });      
 
     serverProcess.unref(); // Prozess im Hintergrund laufen lassen
 
@@ -84,7 +84,7 @@ async function runCIPipeline() {
 
     // Step 4: Run Cypress tests
     console.log("🧪 Running all Cypress tests...");
-    //execSync("npm run test:cypress", { stdio: "inherit" });
+    execSync("npm run test:cypress", { stdio: "inherit" });
 
     console.log("✅✅✅ CI Pipeline successful.");
   } catch (error) {
