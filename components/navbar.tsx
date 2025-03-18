@@ -22,7 +22,7 @@ export default function Navbar() {
       <div className="flex h-16 items-center justify-between mx-4">
         <Link href="/" className="flex items-center space-x-2">
           <Image src="/logo.png" alt="Logo" width={40} height={40} className="h-10 w-auto" /> 
-          <span className="text-xl font-bold">SunshineCBD</span>
+          <span className="text-xl font-bold">Sunshine CBD</span>
         </Link>
         <div className="flex items-center space-x-4">
           {session?.user && (
