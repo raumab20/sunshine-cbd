@@ -22,76 +22,47 @@ jobs:
           script: |
             #!/bin/bash
             set -e
-
+            
             echo ">>> Adding ~/bin to PATH..."
             export PATH=$PATH:~/bin
 
             PROD_DIR=~/html/sunshine-cbd
             TEMP_DIR=~/html/sunshine-cbd_temp
-
             cd $PROD_DIR
-
             echo ">>> Stopping current production (PM2)..."
             pm2 stop all || true
             pm2 delete all || true
-
             echo ">>> Creating temporary directory..."
             rm -rf $TEMP_DIR
             mkdir -p $TEMP_DIR
-
             echo ">>> Syncing current production state to TEMP_DIR..."
             rsync -a --delete $PROD_DIR/ $TEMP_DIR/
-
             echo ">>> Updating code in TEMP_DIR..."
             cd $TEMP_DIR
-            git fetch --all
-            git reset --hard origin/dev
-            git clean -fd
             git pull origin dev
-
-            echo ">>> Ensuring .env files exist..."
-            if [ ! -f ".env" ] || [ ! -f ".env.local" ]; then
-              echo "⚠️ .env or .env.local missing! Restoring from repo..."
-              git checkout -- .env .env.local
-            fi
-
             echo ">>> Running tests in TEMP_DIR..."
             export NODE_OPTIONS="--max-old-space-size=1024"
             npm run ci:all || TEST_FAILED=true
-
             if [ "$TEST_FAILED" = "true" ]; then
               echo "❌ Tests failed! Rolling back to previous version..."
               rm -rf $TEMP_DIR
               cd $PROD_DIR
-              rm -rf .env .env.local 
-
               echo ">>> Reinstalling dependencies in PROD_DIR..."
               npm install
               export NODE_OPTIONS="--max-old-space-size=1024"
               npm run build
-
               echo ">>> Restarting PM2 process with previous version..."
               pm2 start "npm start" --name sunshine-cbd
               exit 1
             fi
-
-            echo ">>> Tests successful! Preparing for deployment..."
-            rm -rf .env .env.local
-            mv .env.production .env  # Setze die Production-Umgebung
-
-            echo ">>> Swapping to production..."
+            echo ">>> Deployment successful! Swapping to production..."
             rm -rf $PROD_DIR
             mv $TEMP_DIR $PROD_DIR
-
             cd $PROD_DIR
-
             echo ">>> Reinstalling dependencies in PROD_DIR..."
             npm install
-            
             export NODE_OPTIONS="--max-old-space-size=1024"
             npm run build
-
             echo ">>> Restarting PM2 process with new version..."
             pm2 start "npm start" --name sunshine-cbd
-
             echo ">>> Deployment complete!"
